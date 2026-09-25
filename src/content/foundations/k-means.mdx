@@ -1,0 +1,64 @@
+## Learning without labels
+
+Everything so far has been **supervised**: each training point came with the right answer. Clustering asks a different question. Given only the points, can we find groups that belong together? K-Means is the classic answer. It describes the data with $k$ representative **centroids** and assigns every point to the nearest one.
+
+## The objective
+
+K-Means minimises the **within-cluster sum of squares** (inertia):
+
+$$
+J(\boldsymbol\mu_1,\dots,\boldsymbol\mu_k) = \sum_{i=1}^{n} \big\|\mathbf x_i - \boldsymbol\mu_{c_i}\big\|^2
+$$
+
+where $c_i$ is the cluster that point $i$ belongs to. Finding the global minimum is NP-hard, but a simple alternating scheme, **Lloyd's algorithm**, finds a good local one:
+
+1. **Assign**: $c_i \leftarrow \arg\min_k \|\mathbf x_i - \boldsymbol\mu_k\|^2$
+2. **Update**: $\boldsymbol\mu_k \leftarrow \frac{1}{|S_k|}\sum_{i \in S_k}\mathbf x_i$ (the mean of each cluster)
+3. Repeat until no assignment changes.
+
+<Callout type="math" title="Why J never increases">
+
+The assignment step picks, for every point, the centroid that minimises its own term, so $J$ cannot go up. The update step minimises $\sum_{i\in S_k}\|\mathbf x_i - \boldsymbol\mu\|^2$ over $\boldsymbol\mu$, and setting its gradient $-2\sum_i(\mathbf x_i - \boldsymbol\mu)$ to zero gives exactly the mean. With finitely many possible assignments and a never-increasing objective, the algorithm must terminate.
+
+</Callout>
+
+## Voronoi cells
+
+The assignment step splits the plane into **Voronoi cells**: the region of points closer to $\boldsymbol\mu_k$ than to any other centroid. Each boundary is the perpendicular bisector between two centroids, so every cell is a convex polygon. The visualizer computes these polygons exactly by clipping the plot area against every bisector.
+
+<KMeansViz />
+
+### Things to try
+
+1. With **k = 3** and **random initialisation**, press **Iterate**. On the four-cluster data, two true clusters get merged: a local optimum.
+2. Click **Re-initialise** a few times. Different seeds reach different final inertias.
+3. Switch to **k-means++**. It picks each new centroid with probability proportional to its squared distance from the nearest existing one (Arthur & Vassilvitskii, 2007), which spreads the seeds out and usually lands near the best solution first time.
+4. Set **k = 4** and compare the **silhouette** with k = 2, 3, 5 and 8. Inertia always drops as k grows (k = n gives zero!), but the silhouette peaks at the natural number of clusters.
+5. Load **Old Faithful**, real eruption data from Yellowstone. With k = 2 the short and long eruption modes separate cleanly.
+6. Try **Two moons** or **Concentric circles**. K-Means assumes compact, roughly spherical clusters, so it cuts these shapes in half.
+
+## Choosing k: the silhouette
+
+For each point let $a(i)$ be the mean distance to the other points in its own cluster, and $b(i)$ the mean distance to the points of the nearest *other* cluster. Then
+
+$$
+s(i) = \frac{b(i) - a(i)}{\max\{a(i),\, b(i)\}} \in [-1, 1]
+$$
+
+Values near 1 mean tight, well-separated clusters, values near 0 mean a point sits on a border, and negative values mean it is probably in the wrong cluster. The mean silhouette over all points is a label-free way to compare values of $k$.
+
+<Callout type="warning" title="When K-Means fails">
+
+- Clusters of very different sizes or densities: big clusters get split, small ones swallowed.
+- Non-convex shapes (moons, rings): use DBSCAN, spectral clustering or Gaussian mixtures instead.
+- Unscaled features: a feature measured in thousands dominates the distances. Standardise first.
+
+</Callout>
+
+## Summary
+
+- K-Means alternates nearest-centroid assignment (Voronoi cells) and mean updates, and the inertia never increases.
+- It finds local optima, so initialisation matters, and k-means++ seeding is the standard fix.
+- Inertia always prefers larger k. Use the silhouette, or domain knowledge, to choose k.
+
+**Challenge:** on the four-cluster preset, reach a silhouette of 0.60 or higher.

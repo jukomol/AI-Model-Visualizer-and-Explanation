@@ -1,0 +1,77 @@
+## From toy surfaces to real training
+
+The *Gradient descent* lesson showed optimisers on two-parameter surfaces. Real networks have millions of parameters, their gradients are **noisy** because each step sees only a mini-batch, and the learning rate usually **changes over time**. This lesson races the main optimisers on an actual network and gives practical guidance for choosing between them.
+
+<OptimizerRace />
+
+## The optimiser zoo
+
+| Optimiser | State per parameter | Update idea | Typical η |
+|---|---|---|---|
+| SGD | none | $\theta \mathrel{-}= \eta g$ | 0.01–1 |
+| Momentum | velocity $v$ | accumulate $v = \mu v + g$ | 0.01–0.1 (μ = 0.9) |
+| Nesterov | velocity $v$ | gradient at the look-ahead point | as momentum |
+| AdaGrad | $\sum g^2$ | divide by $\sqrt{\sum g^2}$ (monotone decay) | 0.01–0.5 |
+| RMSProp | EMA of $g^2$ | divide by $\sqrt{\text{EMA}}$ | 1e-4–1e-2 |
+| Adam | EMAs of $g$ and $g^2$ | momentum ÷ RMS, bias-corrected | 1e-4–3e-3 |
+| AdamW | as Adam | Adam + decoupled weight decay | as Adam |
+
+**AdaGrad** (Duchi et al., 2011) gives rarely-updated parameters larger steps, which is great for sparse features. But its accumulated squared gradients only grow, so its effective learning rate shrinks forever. **RMSProp** fixes that with an exponential moving average. **Adam** adds momentum and bias correction.
+
+<Callout type="math" title="Why AdamW is not Adam + L2">
+
+With an L2 penalty the gradient becomes $g + \lambda\theta$, and Adam then *divides the penalty term too* by $\sqrt{\hat v}$. Parameters with large gradients are barely regularised. Loshchilov & Hutter (2019) decouple the two, so the adaptive step uses only $g$ and the decay is applied directly:
+
+$$
+\theta \leftarrow \theta - \eta\Big(\frac{\hat m}{\sqrt{\hat v} + \epsilon} + \lambda\theta\Big)
+$$
+
+AdamW is now the standard optimiser for Transformers.
+
+</Callout>
+
+### Things to try
+
+1. Run the default race on **two moons**. Adam and RMSProp drop fast, and SGD at η = 0.05 crawls.
+2. Raise **SGD's η** step by step, to 0.3, then 1.0, then 3.0. It becomes competitive, then unstable. Plain SGD is very sensitive to η.
+3. Switch the batch to **8**. The curves become noisy: each step now follows an unbiased but noisy estimate of the gradient. That noise is not all bad, since it helps escape sharp minima.
+4. Enable **AdaGrad** and train for 1,000 steps. It starts well, then its progress slows as $\sum g^2$ grows.
+5. Pick the **spiral** dataset with 16 hidden units. It is harder, and the ranking of optimisers changes.
+
+## Learning-rate schedules
+
+A constant η is rarely optimal. Early in training, large steps make fast progress. Later, small steps settle into a minimum instead of bouncing around it.
+
+- **Step decay**: divide η by 10 at fixed milestones (classic ImageNet training).
+- **Exponential decay**: $\eta_t = \eta_0\gamma^{t}$.
+- **Cosine annealing** (Loshchilov & Hutter, 2016): a smooth half-cosine from $\eta_0$ to near zero.
+- **Warm-up**: start small and ramp up linearly over the first few percent of steps. Adam's second-moment estimates are unreliable at first, and very large batches are unstable early on (Goyal et al., 2017).
+- **One-cycle** (Smith & Topin, 2017): warm up to a large peak, then anneal far below the start. It often trains in fewer steps.
+- **Inverse square root** (Vaswani et al., 2017): warm-up, then $\eta \propto 1/\sqrt{t}$. This is the original Transformer schedule.
+
+Choose a schedule in the race and compare its curve (bottom chart) with how each optimiser's loss behaves.
+
+## Which optimiser should I use?
+
+<Callout type="insight" title="Practical defaults">
+
+- **Start with AdamW** (η ≈ 1e-3 or 3e-4, weight decay 0.01–0.1) with warm-up plus cosine decay. It is robust across architectures and needs the least tuning.
+- **SGD + momentum (0.9) + cosine or step schedule** is still preferred by many for image classification with CNNs. It can generalise slightly better (Wilson et al., 2017), but needs careful tuning of η.
+- **Sparse features** (recommendation, bag-of-words): AdaGrad, or Adam with sparse updates.
+- **Fine-tuning a pretrained model**: a small η (1e-5 to 1e-4) with AdamW.
+- **Loss suddenly becomes NaN**: lower η, add warm-up or gradient clipping, and check the data.
+- **Tune η first**. It matters more than which optimiser you pick: do a quick sweep on a log scale.
+
+</Callout>
+
+## Summary
+
+- Optimisers differ in the state they keep: none (SGD), a velocity (momentum), squared-gradient statistics (AdaGrad/RMSProp), or both (Adam).
+- Mini-batches make gradients noisy, and schedules (warm-up, cosine, one-cycle) shape the step size over training.
+- AdamW with warm-up and cosine decay is the modern default. Well-tuned SGD with momentum remains a strong alternative.
+
+**Challenge:** on two moons, tune *plain* SGD to a loss of 0.30 or lower within 400 steps.
+
+You can also revisit the optimisers on the 3-D surfaces, now including AdaGrad:
+
+<LossLandscape3D surface="bowl" />

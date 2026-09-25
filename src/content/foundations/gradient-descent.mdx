@@ -1,0 +1,70 @@
+## The one idea behind training
+
+A neural network with millions of weights is trained by the same idea you used for a straight line. Compute the gradient $\nabla L(\theta)$, the direction in which the loss increases fastest, and step the other way:
+
+$$
+\theta_{t+1} = \theta_t - \eta\,\nabla L(\theta_t)
+$$
+
+This lesson is about what happens on loss surfaces less friendly than a bowl, and about the improved update rules invented to cope with them.
+
+## Three kinds of trouble
+
+**Ill-conditioning.** When the surface is steep in one direction and shallow in another, a learning rate small enough for the steep direction crawls along the shallow one. A larger rate bounces between the walls.
+
+**Narrow curved valleys.** Rosenbrock's function $f(x, y) = (1 - x)^2 + 100(y - x^2)^2$ has its minimum at $(1, 1)$ at the end of a banana-shaped valley. Plain gradient descent reaches the valley quickly, then shuffles along its almost flat floor.
+
+**Saddle points and multiple minima.** In high dimensions most critical points are saddles, not minima. Near one the gradient is tiny, so plain descent stalls. On a surface with several minima, where you *start* decides where you end.
+
+## Better update rules
+
+**Momentum** (Polyak, 1964) keeps a running velocity, so consistent gradients accumulate and oscillating ones cancel:
+
+$$
+v_{t+1} = \mu v_t + \nabla L(\theta_t), \qquad \theta_{t+1} = \theta_t - \eta\,v_{t+1}
+$$
+
+**Nesterov momentum** evaluates the gradient at the point momentum is about to carry you to, which corrects overshoot earlier.
+
+**RMSProp** divides each coordinate's step by a running average of its squared gradients. Steep directions get smaller steps and flat directions bigger ones:
+
+$$
+s_t = \rho\,s_{t-1} + (1 - \rho)\,g_t^2, \qquad \theta_{t+1} = \theta_t - \frac{\eta\,g_t}{\sqrt{s_t} + \epsilon}
+$$
+
+**Adam** (Kingma & Ba, 2014) combines momentum's first moment with RMSProp's second moment, plus a bias correction for the early steps:
+
+$$
+m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t, \quad v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2, \quad
+\theta_{t} = \theta_{t-1} - \eta\,\frac{m_t / (1 - \beta_1^t)}{\sqrt{v_t / (1 - \beta_2^t)} + \epsilon}
+$$
+
+<Callout type="insight" title="Why Adam's first step is always about η">
+
+At $t = 1$ the bias-corrected moments equal $g_1$ and $g_1^2$, so the step is $\eta\,g_1/|g_1| = \pm\eta$ in every coordinate, however large or small the gradient. Adam's step size is roughly scale-free, which is a large part of why it is a robust default.
+
+</Callout>
+
+<LossLandscape3D surface="rosenbrock" />
+
+### Things to try
+
+1. **Rosenbrock**: all three default optimisers reach the valley. Compare how far along the floor each one gets in 300 steps (the table's *Position* column). The minimum is at (1, 1).
+2. Raise SGD's η a little at a time. It soon becomes unstable, because the valley walls are steep (curvature ≈ 1000).
+3. **Elongated bowl**: watch SGD zig-zag while momentum glides. Then set momentum's β to 0.99 and watch it overshoot and spiral.
+4. **Saddle**: start at (−1.8, 0.001), almost exactly on the ridge. SGD dawdles near the saddle, while momentum escapes much faster.
+5. **Himmelblau**: click different start points on the contour map (switch to the *Contour map* view). Each of the four minima has its own basin of attraction.
+
+<Callout type="warning" title="Two dimensions are not a thousand">
+
+These surfaces build intuition, but real loss surfaces are high-dimensional and noisy, because each step sees only a mini-batch. The *Optimisers in practice* lesson races these rules on a real network, with mini-batches and learning-rate schedules.
+
+</Callout>
+
+## Summary
+
+- Gradient descent follows $-\nabla L$ and is limited by curvature: steep directions cap $\eta$, and flat directions make progress slow.
+- Momentum smooths the path, adaptive methods (RMSProp, Adam) rescale each coordinate, and Adam combines both.
+- The starting point and the geometry of the surface matter as much as the update rule.
+
+**Challenge:** on the Rosenbrock valley, reach a loss of 0.01 or less within the 1,000-step budget.

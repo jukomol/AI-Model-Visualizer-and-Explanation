@@ -1,0 +1,50 @@
+## Too many boxes
+
+Object detectors, from R-CNN to YOLO, predict boxes *densely*: thousands of candidate boxes, each with a class score. A single cat usually triggers a whole cluster of overlapping boxes with slightly different positions and scores. **Non-maximum suppression (NMS)** is the post-processing step that keeps the best box per object and discards the duplicates.
+
+## Measuring overlap: IoU
+
+The **Intersection over Union** of two boxes $A$ and $B$ is
+
+$$
+\operatorname{IoU}(A, B) = \frac{|A \cap B|}{|A \cup B|} = \frac{|A \cap B|}{|A| + |B| - |A \cap B|}
+$$
+
+It is 1 for identical boxes and 0 for disjoint ones. It is also how detection benchmarks decide whether a prediction "hits" a ground-truth object (often at IoU ≥ 0.5).
+
+## Greedy NMS
+
+1. Drop every box whose score is below a **score threshold**.
+2. Sort the rest by score. Take the highest-scoring box and **keep** it.
+3. Remove every remaining box whose IoU with the kept box exceeds the **IoU threshold** $\tau$ (usually per class).
+4. Repeat with the next highest remaining box until none are left.
+
+<NMSVisualizer />
+
+### Things to try
+
+1. With τ = 0.90 nothing is suppressed, and all 22 proposals survive. Lower τ gradually and step through the algorithm. Each step shows the kept box and the IoU values of the boxes it suppresses.
+2. Set τ very low (≈ 0.1). Boxes for *different* objects can now suppress each other when they overlap slightly. Too aggressive.
+3. Some false positives survive NMS because they overlap nothing. Raise the **score threshold** to remove them.
+4. Switch to **Class-agnostic** NMS and see how overlapping objects of different classes interact.
+5. Try **Soft-NMS**. Instead of deleting overlapping boxes it decays their scores, $s_b \leftarrow s_b\,e^{-\operatorname{IoU}(M, b)^2/\sigma}$. This helps crowded scenes where two real objects overlap heavily.
+
+<Callout type="math" title="Complexity">
+
+Greedy NMS compares each kept box with all remaining boxes, so it costs $O(n^2)$ in the worst case. For thousands of proposals, GPU implementations batch the IoU matrix. Newer detectors such as DETR (2020) avoid NMS entirely by predicting a fixed set of boxes and training with a one-to-one matching loss.
+
+</Callout>
+
+<Callout type="warning" title="The threshold trade-off">
+
+A high τ leaves duplicates (false positives). A low τ merges nearby distinct objects (missed detections), for example people in a crowd. There is no universally right value. Tune it on validation data for your dataset.
+
+</Callout>
+
+## Summary
+
+- IoU measures box overlap and underpins both NMS and detection evaluation.
+- Greedy NMS keeps the highest-scoring box and removes neighbours whose IoU exceeds τ, repeatedly.
+- Soft-NMS decays scores instead of deleting boxes, which is gentler in crowded scenes.
+
+**Challenge:** tune the thresholds so exactly one box survives per object.

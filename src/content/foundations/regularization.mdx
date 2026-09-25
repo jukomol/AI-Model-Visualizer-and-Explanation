@@ -1,0 +1,71 @@
+## Fitting the data versus fitting the noise
+
+A model with enough parameters can pass exactly through every training point. That is rarely what we want, because training labels contain noise and the model's real job is to predict **new** data. **Over-fitting** means memorising the noise, and **under-fitting** means being too simple to capture the signal. Regularisation is the set of tools for landing in between.
+
+## The bias–variance decomposition
+
+Imagine redrawing the training set many times and refitting. For squared error, the expected error at a point $x$ splits into three parts:
+
+$$
+\mathbb E\big[(y - \hat f(x))^2\big] = \underbrace{\big(\mathbb E[\hat f(x)] - f(x)\big)^2}_{\text{bias}^2} + \underbrace{\operatorname{Var}\big[\hat f(x)\big]}_{\text{variance}} + \underbrace{\sigma^2}_{\text{noise}}
+$$
+
+Simple models have high bias: they miss the shape consistently. Flexible models have high variance: they change wildly with each new sample. The noise term $\sigma^2$ is a floor that no model can beat. Validation error traces a **U-shape** as model complexity grows.
+
+<RegularizationViz />
+
+### Things to try
+
+1. Sweep the **degree** from 1 to 14 with no penalty and watch the bias–variance chart. Training error falls steadily, while validation error falls, bottoms out around degree 3, and then explodes.
+2. At degree 12, switch to **Ridge** and slide λ. Validation MSE drops by orders of magnitude, and the coefficient bars shrink.
+3. Switch to **Lasso**. Some coefficients become *exactly* zero (the *Zero coefficients* tile). Lasso performs automatic feature selection.
+4. Press **Draw a new training set** at degree 12 with no penalty. The fitted curve changes wildly each time. That is variance, made visible.
+
+## L2: ridge regression (weight decay)
+
+Add the squared size of the weights to the loss:
+
+$$
+\min_{\mathbf w}\ \frac1n\|X\mathbf w - \mathbf y\|^2 + \lambda\|\mathbf w\|_2^2 \qquad\Rightarrow\qquad \mathbf w^\star = \Big(\tfrac{1}{n}X^\top X + \lambda I\Big)^{-1}\tfrac1n X^\top\mathbf y
+$$
+
+The $\lambda I$ term makes the matrix well-conditioned and pulls every coefficient smoothly towards zero. In neural networks the same penalty is called **weight decay**: each gradient step multiplies the weights by $(1 - 2\eta\lambda)$.
+
+## L1: the lasso and sparsity
+
+$$
+\min_{\mathbf w}\ \frac{1}{2n}\|X\mathbf w - \mathbf y\|^2 + \lambda\|\mathbf w\|_1
+$$
+
+<Callout type="math" title="Why L1 produces exact zeros">
+
+Coordinate descent updates one weight at a time. With $\rho_j$ the correlation between feature $j$ and the current residual (with $w_j$ added back), the exact minimiser is the **soft-threshold**
+
+$$
+w_j = \frac{\operatorname{sign}(\rho_j)\max(0,\ |\rho_j| - \lambda)}{\tfrac1n\|X_{:,j}\|^2}
+$$
+
+Whenever $|\rho_j| \le \lambda$ the weight is set to exactly zero. Geometrically, the L1 ball is a diamond whose corners lie on the axes, and the loss contours usually touch it at a corner.
+
+</Callout>
+
+## Other regularisers you will meet
+
+- **Early stopping**: stop training when validation loss starts rising. For gradient descent on a quadratic loss it acts much like an L2 penalty.
+- **Dropout**: randomly zero activations during training (the *Anatomy of a CNN* lesson), so the network cannot rely on any single unit.
+- **Data augmentation**: enlarge the training set with label-preserving transformations.
+- **Decoupled weight decay (AdamW)**: see *Optimisers in practice* for why L2 and weight decay differ under Adam.
+
+<Callout type="insight" title="Choose λ with data, not with hope">
+
+Hold out a validation set (or use cross-validation), sweep λ on a log scale, and pick the value with the lowest validation error. Report final performance on a separate **test** set you never used for choosing anything.
+
+</Callout>
+
+## Summary
+
+- Expected error = bias² + variance + noise. More capacity trades bias for variance.
+- L2 shrinks every coefficient, and L1 zeroes many of them.
+- Regularisation strength is a hyper-parameter: pick it on validation data.
+
+**Challenge:** with a degree ≥ 10 polynomial, use regularisation to bring the validation MSE to 0.15 or less.

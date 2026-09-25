@@ -1,0 +1,60 @@
+## Twenty questions for data
+
+A decision tree predicts by asking a sequence of yes/no questions about the features: "Is x ≤ 0.12? Is y ≤ −0.4?" Each question splits the data, each leaf makes a prediction, and the whole model can be drawn and read. That is why trees are loved in medicine, credit scoring and anywhere a decision has to be explained.
+
+## Choosing a split: impurity
+
+A good question makes the resulting groups **purer**. With class proportions $p_k$ in a node, two standard impurity measures are
+
+$$
+\text{Gini: } G = 1 - \sum_k p_k^2 \qquad\qquad \text{Entropy: } H = -\sum_k p_k \log_2 p_k
+$$
+
+Both are zero for a pure node and largest for an even mix: $G = 0.5$ and $H = 1$ bit for two balanced classes. For a candidate split into left and right children, the **gain** is
+
+$$
+\Delta = I(\text{parent}) - \frac{n_L}{n}I(L) - \frac{n_R}{n}I(R)
+$$
+
+**CART** (Breiman et al., 1984) tries every feature and every threshold between consecutive sorted values, keeps the split with the largest gain, and then recurses into each child until the nodes are pure or a stopping rule fires.
+
+<DecisionTreeViz />
+
+### Things to try
+
+1. With **unlimited depth**, training accuracy hits 100% while test accuracy (hollow markers) stays around 78%. The tiny rectangles are the tree memorising individual noisy points.
+2. Lower **Max depth** to 2 or 3, or raise **Min samples to split**. The regions get simpler and test accuracy *rises*. That is pruning, and it is regularisation for trees.
+3. Choose **XOR** and set depth 2. A greedy tree does not find the obvious two-split solution: no single first split reduces impurity much, so it picks a poor one. Deeper trees get there eventually.
+4. Switch to **Random forest** and increase the number of trees from 1 to 60. The jagged boundary smooths out.
+
+## Random forests: averaging away variance
+
+A single deep tree has low bias but very high variance, since a slightly different training set can produce a completely different tree. **Bagging** (bootstrap aggregating) trains many trees on bootstrap resamples of the data and averages their votes. Breiman's **random forest** (2001) goes further and gives each split only a random subset of the features, which *decorrelates* the trees. Averaging $B$ trees with variance $\sigma^2$ and pairwise correlation $\rho$ leaves a variance of
+
+$$
+\rho\,\sigma^2 + \frac{1-\rho}{B}\,\sigma^2
+$$
+
+so more trees help, and less correlated trees help even more.
+
+<Callout type="insight" title="Where trees shine">
+
+Tree ensembles, meaning random forests and **gradient-boosted trees** such as XGBoost and LightGBM (Friedman, 2001), remain the strongest default for **tabular** data. They handle mixed feature types and missing values, need no feature scaling, and are hard to beat without much larger datasets.
+
+</Callout>
+
+<Callout type="warning" title="Limitations">
+
+- Axis-aligned splits approximate diagonal boundaries with staircases.
+- Single trees are unstable: small data changes can alter the whole tree.
+- Trees cannot extrapolate. Predictions outside the training range are constant.
+
+</Callout>
+
+## Summary
+
+- Trees split recursively on the feature and threshold with the largest impurity reduction.
+- Unlimited trees over-fit, and limiting depth or leaf size regularises them.
+- Random forests average many decorrelated trees, cutting variance at little cost in bias.
+
+**Challenge:** reach 80% test accuracy on noisy moons. The default fully grown tree only manages about 78%.

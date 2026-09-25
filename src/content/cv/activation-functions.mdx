@@ -1,0 +1,52 @@
+## Why networks need non-linearities
+
+Stack two linear layers, $W_2(W_1\mathbf x) = (W_2W_1)\mathbf x$, and you get another linear layer. Without non-linear **activation functions** a deep network is no more expressive than logistic regression. The activation also appears in every backward step, since each gradient is multiplied by $\phi'(z)$. Its shape therefore decides whether deep networks can learn at all.
+
+<ActivationExplorer />
+
+## A tour of the zoo
+
+- **Sigmoid** $\sigma(x) = 1/(1 + e^{-x})$: historic, and still used for output probabilities. Its derivative peaks at 0.25 and vanishes for large $|x|$ (**saturation**), and its outputs are not zero-centred.
+- **tanh**: a rescaled sigmoid, $\tanh(x) = 2\sigma(2x) - 1$. It is zero-centred and its derivative peaks at 1, but it still saturates.
+- **ReLU** $\max(0, x)$ (Nair & Hinton, 2010): cheap, non-saturating for $x > 0$, and sparse. Units stuck at $x < 0$ for every input receive no gradient ever again: the **dying ReLU** problem.
+- **Leaky ReLU / ELU**: keep a small gradient for $x < 0$ to avoid dead units. ELU is also smooth and pushes mean activations towards zero.
+- **GELU** $x\,\Phi(x)$ (Hendrycks & Gimpel, 2016) and **SiLU/Swish** $x\,\sigma(x)$: smooth, slightly non-monotonic versions of ReLU, the default in Transformers (BERT, GPT).
+- **Softplus** $\log(1 + e^{x})$: a smooth ReLU, often used where an output must be positive, such as a standard deviation.
+
+### Things to try
+
+1. In **Shapes & derivatives**, compare φ′ for sigmoid and ReLU. Sigmoid's gradient never exceeds 0.25, so over 10 layers that is at most $0.25^{10} \approx 10^{-6}$.
+2. Open **Gradients through depth**. With the defaults (sigmoid, Xavier), the gradient at layer 1 is about $10^{-12}$ of the gradient at layer 20. The early layers would barely learn.
+3. Switch to **ReLU + He**. The gradient norm is almost flat across depth.
+4. Try **ReLU + Xavier**. Each ReLU layer halves the signal's variance, so activations and gradients decay steadily. That factor of 2 is exactly what He initialisation corrects.
+5. Try the **Naive N(0, 0.01²)** initialisation with any activation. The activations collapse to zero within a few layers.
+
+## Initialisation: keeping variance constant
+
+<Callout type="math" title="Xavier and He">
+
+For a layer $z_j = \sum_{i=1}^{n} W_{ji} a_i$ with independent zero-mean weights, $\operatorname{Var}(z_j) = n\,\operatorname{Var}(W)\,\mathbb E[a_i^2]$. To keep the signal's scale constant from layer to layer:
+
+- **Xavier/Glorot** (tanh or linear-like activations): $\operatorname{Var}(W) = 1/n$.
+- **He/Kaiming** (ReLU): ReLU zeroes half its inputs, so $\mathbb E[a^2] = \tfrac12\operatorname{Var}(z)$, and compensating requires $\operatorname{Var}(W) = 2/n$.
+
+The same argument applied to the backward pass keeps gradient magnitudes stable.
+
+</Callout>
+
+<Callout type="insight" title="Defaults that work">
+
+- Hidden layers of MLPs and CNNs: **ReLU** (or Leaky ReLU) with **He** initialisation.
+- Transformers: **GELU** or **SiLU**, with normalisation layers.
+- Output layer: **sigmoid** for binary probabilities, **softmax** for classes, **identity** for regression.
+- Recurrent gates: sigmoid and tanh (the LSTM lesson explains why).
+
+</Callout>
+
+## Summary
+
+- Non-linear activations make depth useful, and their derivatives scale every back-propagated gradient.
+- Saturating activations (sigmoid, tanh) cause vanishing gradients in deep stacks. ReLU-family activations largely avoid this.
+- Initialisation must match the activation, Xavier for tanh and He for ReLU, to keep signals and gradients at a healthy scale.
+
+**Challenge:** in a 20-layer network, choose an activation and initialisation that keep the first layer's gradient within 10× of the last layer's.

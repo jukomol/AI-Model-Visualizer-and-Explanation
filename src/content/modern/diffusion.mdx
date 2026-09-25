@@ -1,0 +1,67 @@
+## Generating data by learning to denoise
+
+How do you teach a network to *create* images, audio or molecules? **Generative Adversarial Networks** (Goodfellow et al., 2014) pit a generator against a discriminator. They are powerful, but notoriously unstable to train. **Diffusion models** (Sohl-Dickstein et al., 2015; Ho et al., 2020) take a gentler route. They destroy data with noise one small step at a time, then learn to run the process backwards.
+
+## The forward process
+
+Starting from a data point $\mathbf x_0$, add a little Gaussian noise at each of $T$ steps with variances $\beta_1, \dots, \beta_T$. Because a sum of Gaussians is Gaussian, we can jump straight to any step:
+
+$$
+q(\mathbf x_t \mid \mathbf x_0) = \mathcal N\big(\sqrt{\bar\alpha_t}\,\mathbf x_0,\ (1 - \bar\alpha_t)\,I\big), \qquad \bar\alpha_t = \prod_{s=1}^{t}(1 - \beta_s)
+$$
+
+In words: $\mathbf x_t = \sqrt{\bar\alpha_t}\,\mathbf x_0 + \sqrt{1-\bar\alpha_t}\,\boldsymbol\epsilon$ with $\boldsymbol\epsilon \sim \mathcal N(0, I)$. As $t \to T$, $\bar\alpha_t \to 0$ and the data becomes pure noise.
+
+<DiffusionViz />
+
+### Things to try (forward)
+
+1. Drag **timestep t** from 0 to 1000 and watch the structure dissolve.
+2. Compare the schedules on the ᾱ chart. The **linear** schedule (Ho et al.) destroys information quickly in the middle steps. The **cosine** schedule (Nichol & Dhariwal, 2021) keeps more signal for longer, so more of the timesteps carry useful signal.
+
+## The reverse process
+
+To generate, start from noise $\mathbf x_T \sim \mathcal N(0, I)$ and repeatedly denoise. The key quantity is the **posterior mean** $\mathbb E[\mathbf x_0 \mid \mathbf x_t]$, the best guess of the clean point given a noisy one. A diffusion model trains a network $\boldsymbol\epsilon_\theta(\mathbf x_t, t)$ to predict the added noise, which is equivalent:
+
+$$
+L = \mathbb E_{t,\,\mathbf x_0,\,\boldsymbol\epsilon}\Big\|\boldsymbol\epsilon - \boldsymbol\epsilon_\theta\big(\sqrt{\bar\alpha_t}\mathbf x_0 + \sqrt{1-\bar\alpha_t}\,\boldsymbol\epsilon,\ t\big)\Big\|^2
+$$
+
+<Callout type="math" title="The optimal denoiser used here">
+
+For a finite training set $\{\mathbf x^{(i)}\}$, the posterior mean has a closed form: a softmax-weighted average of the training points,
+
+$$
+\hat{\mathbf x}_0(\mathbf x_t) = \sum_i w_i\,\mathbf x^{(i)}, \qquad w_i \propto \exp\!\Big(-\frac{\|\mathbf x_t - \sqrt{\bar\alpha_t}\,\mathbf x^{(i)}\|^2}{2(1 - \bar\alpha_t)}\Big)
+$$
+
+This visualizer uses that *exact* optimum instead of a trained network, so the sampling dynamics are shown without training noise. There is a lesson hidden in it: the perfect denoiser reproduces the training points exactly, so it memorises. Real diffusion models generalise precisely because their networks are smooth, imperfect approximations of it.
+
+</Callout>
+
+**DDIM** sampling (Song, Meng & Ermon, 2020) takes large deterministic steps. From the estimate $\hat{\mathbf x}_0$ it recovers the implied noise $\hat{\boldsymbol\epsilon}$ and jumps to an earlier timestep $t'$:
+
+$$
+\mathbf x_{t'} = \sqrt{\bar\alpha_{t'}}\,\hat{\mathbf x}_0 + \sqrt{1 - \bar\alpha_{t'}}\,\hat{\boldsymbol\epsilon}
+$$
+
+### Things to try (reverse)
+
+1. Switch to **Reverse (sample)** and press **Denoise**. Samples drift from a Gaussian blob onto the data manifold.
+2. With **1 sampling step**, every sample collapses towards the *mean* of the data: one giant step can only use the average denoiser.
+3. Increase the steps. Samples spread out and land on the moons. Compare how many steps the linear and cosine schedules need to reach the same accuracy.
+4. Try the spiral and circles datasets. Thin structures need more steps.
+
+<Callout type="insight" title="From 2-D points to images">
+
+Stable Diffusion and similar models run exactly this loop, but on images, or on compressed "latent" representations of them. A U-Net or Transformer is conditioned on the timestep and a text embedding, and techniques such as classifier-free guidance steer samples towards the prompt.
+
+</Callout>
+
+## Summary
+
+- The forward process mixes data with Gaussian noise, $\mathbf x_t = \sqrt{\bar\alpha_t}\mathbf x_0 + \sqrt{1-\bar\alpha_t}\boldsymbol\epsilon$, with a chosen schedule.
+- Generation runs the process backwards using an estimate of $\mathbb E[\mathbf x_0 \mid \mathbf x_t]$, learned in practice by predicting the noise.
+- Deterministic samplers such as DDIM trade the number of steps against accuracy.
+
+**Challenge:** configure the sampler so generated points land on the data (mean distance 0.05 or less).

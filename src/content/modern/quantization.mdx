@@ -1,0 +1,58 @@
+## Fitting models onto small devices
+
+A trained network stores its weights as 32-bit floats. For phones, microcontrollers and browsers that costs memory, bandwidth and energy. Integer arithmetic is also much cheaper than floating point. **Quantisation** maps each FP32 value onto a small grid of integers (INT8, or even INT4) and back, trading a little accuracy for 4–8× smaller models and faster inference.
+
+## Affine quantisation
+
+Choose a real range $[\alpha, \beta]$ to represent and an integer range $[q_{\min}, q_{\max}]$, which is $[-128, 127]$ for INT8. Then
+
+$$
+s = \frac{\beta - \alpha}{q_{\max} - q_{\min}}, \qquad z = \operatorname{round}\Big(q_{\min} - \frac{\alpha}{s}\Big)
+$$
+
+$$
+q = \operatorname{clamp}\big(\operatorname{round}(x/s) + z,\ q_{\min},\ q_{\max}\big), \qquad \hat x = s\,(q - z)
+$$
+
+The **scale** $s$ is the grid spacing and the **zero-point** $z$ is the integer that represents 0.0. **Symmetric** quantisation fixes $z = 0$ and uses the range $\pm\max|x|$. It is simpler and faster, and is usually used for weights.
+
+<Callout type="math" title="Why zero must be exact">
+
+Zero padding in convolutions, ReLU outputs and sparse weights are all exactly 0. If 0.0 weren't representable, every one of them would carry a systematic rounding error. So the range is always widened to include 0, which makes $z$ an integer (Jacob et al., 2018).
+
+</Callout>
+
+## Two kinds of error
+
+- **Rounding error**: inside the range, each value moves by at most $s/2$. The error falls as the grid gets finer.
+- **Clipping error**: values outside $[\alpha, \beta]$ saturate at the ends.
+
+Min/max calibration never clips, but a few outliers stretch the range and make the grid coarse for everyone else. Choosing the range is a trade-off between the two errors.
+
+<QuantizationViz />
+
+### Things to try
+
+1. At **INT8** with min/max calibration, the SQNR is already around 36 dB. Values change only in the third significant digit.
+2. Drop to **4 bits**: only 15 levels remain (symmetric). With min/max calibration most of the bulk weights round to the same few levels.
+3. Switch to **percentile** or **manual** calibration and shrink the clip range. The SQNR rises and then falls again. The sweep chart shows the optimum.
+4. Each extra bit adds about 6 dB of SQNR. Check this by stepping from 6 to 8 bits.
+5. If you trained TinyShapeNet in the *Anatomy of a CNN* lesson, quantise its real `fc1` weights.
+
+<Callout type="insight" title="In practice">
+
+- **Post-training quantisation (PTQ)**: calibrate the ranges on a few hundred representative inputs. INT8 PTQ usually costs under 1% accuracy for CNNs.
+- **Per-channel scales** for weights (one scale per output channel) handle channels with very different magnitudes.
+- **Quantisation-aware training (QAT)** simulates rounding during training (with a straight-through estimator for gradients), so the network learns to tolerate it. This is essential at 4 bits and below.
+- Large language models often keep outlier channels in higher precision, or use schemes such as GPTQ and AWQ.
+- **Deep Compression** (Han et al., 2016) combined pruning, quantisation and Huffman coding to shrink networks 35–49× with no loss of accuracy.
+
+</Callout>
+
+## Summary
+
+- Quantisation maps floats to integers with a scale and a zero-point, $q = \operatorname{round}(x/s) + z$.
+- Calibration chooses the range: clipping outliers trades clipping error for finer rounding of the bulk.
+- INT8 is nearly free for most CNNs. Fewer bits need careful calibration or quantisation-aware training.
+
+**Challenge:** at 4 bits, choose a calibration range that reaches an SQNR of 14.5 dB or more.

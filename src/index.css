@@ -1,0 +1,250 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- Design tokens (shadcn/ui conventions) ---------- */
+:root {
+  --radius: 0.75rem;
+  --background: #f7f7f5;
+  --foreground: #16181d;
+  --card: #ffffff;
+  --card-foreground: #16181d;
+  --popover: #ffffff;
+  --popover-foreground: #16181d;
+  --primary: #4338ca;
+  --primary-foreground: #ffffff;
+  --secondary: #eceef3;
+  --secondary-foreground: #1f2330;
+  --muted: #f0f1f4;
+  --muted-foreground: #5b6070;
+  --accent: #e6e9f5;
+  --accent-foreground: #1f2330;
+  --destructive: #d03b3b;
+  --destructive-foreground: #ffffff;
+  --success: #0b7a0b;
+  --warning: #9a6a00;
+  --border: #e1e2e8;
+  --input: #d6d8e0;
+  --ring: #6366f1;
+  --track-foundations: #0e7490;
+  --track-cv: #7c3aed;
+  --track-modern: #b45309;
+  --viz-surface: #ffffff;
+  --viz-grid: #e1e0d9;
+  --viz-axis: #c3c2b7;
+  --viz-ink: #52514e;
+}
+
+.dark {
+  --background: #0b1020;
+  --foreground: #e7e9f0;
+  --card: #131a26;
+  --card-foreground: #e7e9f0;
+  --popover: #161e2c;
+  --popover-foreground: #e7e9f0;
+  --primary: #a5b4fc;
+  --primary-foreground: #111827;
+  --secondary: #1d2636;
+  --secondary-foreground: #e7e9f0;
+  --muted: #1a2231;
+  --muted-foreground: #9aa3b5;
+  --accent: #222c3e;
+  --accent-foreground: #e7e9f0;
+  --destructive: #e66767;
+  --destructive-foreground: #111827;
+  --success: #3fcf5e;
+  --warning: #fab219;
+  --border: #253046;
+  --input: #2d3850;
+  --ring: #818cf8;
+  --track-foundations: #22d3ee;
+  --track-cv: #c084fc;
+  --track-modern: #fbbf24;
+  --viz-surface: #131a26;
+  --viz-grid: #232c3c;
+  --viz-axis: #33405a;
+  --viz-ink: #c3c2b7;
+}
+
+@theme inline {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-track-foundations: var(--track-foundations);
+  --color-track-cv: var(--track-cv);
+  --color-track-modern: var(--track-modern);
+  --color-viz-surface: var(--viz-surface);
+  --color-viz-grid: var(--viz-grid);
+  --color-viz-axis: var(--viz-axis);
+  --color-viz-ink: var(--viz-ink);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --animate-fade-in: fade-in 0.25s ease-out;
+  --animate-slide-in-right: slide-in-right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-slide-up: slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes slide-up {
+    from { transform: translateY(8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    min-height: 100vh;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ---------- Lesson typography (MDX output) ---------- */
+@layer components {
+  .lesson-prose {
+    @apply text-[1.02rem] leading-7 text-foreground/90;
+  }
+  .lesson-prose > * + * {
+    margin-top: 1.1em;
+  }
+  .lesson-prose h2 {
+    @apply mt-12 scroll-mt-24 border-b border-border pb-2 text-2xl font-semibold tracking-tight text-foreground;
+  }
+  .lesson-prose h3 {
+    @apply mt-8 scroll-mt-24 text-xl font-semibold tracking-tight text-foreground;
+  }
+  .lesson-prose h4 {
+    @apply mt-6 font-semibold text-foreground;
+  }
+  .lesson-prose p {
+    @apply max-w-[72ch];
+  }
+  .lesson-prose a {
+    @apply font-medium text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary;
+  }
+  .lesson-prose strong {
+    @apply font-semibold text-foreground;
+  }
+  .lesson-prose ul {
+    @apply max-w-[72ch] list-disc space-y-1.5 pl-6 marker:text-muted-foreground;
+  }
+  .lesson-prose ol {
+    @apply max-w-[72ch] list-decimal space-y-1.5 pl-6 marker:text-muted-foreground;
+  }
+  .lesson-prose blockquote {
+    @apply max-w-[72ch] border-l-4 border-primary/50 pl-4 text-muted-foreground italic;
+  }
+  .lesson-prose :not(pre) > code {
+    @apply rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.88em] text-foreground;
+  }
+  .lesson-prose pre {
+    @apply overflow-x-auto rounded-lg border border-border bg-muted p-4 font-mono text-sm leading-6;
+  }
+  .lesson-prose table {
+    @apply block w-full max-w-full overflow-x-auto text-sm;
+    border-collapse: collapse;
+  }
+  .lesson-prose th {
+    @apply border-b border-border px-3 py-2 text-left font-semibold whitespace-nowrap;
+  }
+  .lesson-prose td {
+    @apply border-b border-border/60 px-3 py-2 align-top;
+    font-variant-numeric: tabular-nums;
+  }
+  .lesson-prose hr {
+    @apply my-10 border-border;
+  }
+  .lesson-prose .katex-display {
+    @apply my-5 overflow-x-auto overflow-y-hidden py-1;
+  }
+  .lesson-prose .katex {
+    font-size: 1.08em;
+  }
+}
+
+/* KaTeX inherits the theme colour. */
+.katex {
+  color: inherit;
+}
+
+/* Crisp pixel rendering for feature maps and kernels. */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Custom range styling for native inputs used in dense grids. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media print {
+  header,
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
