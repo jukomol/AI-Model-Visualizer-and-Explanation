@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="An interactive visual textbook for machine learning and deep learning — from linear regression to transformers, diffusion and quantization. Everything runs in your browser." />
+    <meta name="theme-color" content="#0b1020" />
+    <title>ML/DL Interactive Visualizer</title>
+    <script>
+      // Apply the persisted theme before first paint to avoid a flash.
+      try {
+        var raw = localStorage.getItem('mlviz-progress')
+        var theme = raw ? JSON.parse(raw).state.theme : null
+        if (theme === 'light') document.documentElement.classList.remove('dark')
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="./assets/index-ghSIyZeh.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/katex-DStc31fQ.js">
+    <link rel="modulepreload" crossorigin href="./assets/tfjs-DmZc1K5o.js">
+    <link rel="stylesheet" crossorigin href="./assets/katex-DLVrwanO.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-ChVbmVEy.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>This interactive textbook needs JavaScript: all models train and run in your browser.</noscript>
+  </body>
+</html>

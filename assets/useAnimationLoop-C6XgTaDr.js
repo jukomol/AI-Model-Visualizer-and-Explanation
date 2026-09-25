@@ -1,0 +1,1 @@
+import{r as s}from"./index-ghSIyZeh.js";function m(t,r,n=30){const a=s.useRef(r);a.current=r,s.useEffect(()=>{if(!t)return;let e=0,o=0;const u=1e3/n,i=f=>{f-o>=u&&(o=f,a.current()===!1)||(e=requestAnimationFrame(i))};return e=requestAnimationFrame(i),()=>cancelAnimationFrame(e)},[t,n])}export{m as u};

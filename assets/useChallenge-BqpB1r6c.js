@@ -1,0 +1,1 @@
+import{r as o,K as r}from"./index-ghSIyZeh.js";const n=o.createContext(null),u=()=>{};function c(){return o.useContext(n)?.report??u}const p=r(a=>({values:{},set:(t,s)=>a(e=>e.values[t]===s?e:{values:{...e.values,[t]:s}})}));export{n as C,c as a,p as u};
