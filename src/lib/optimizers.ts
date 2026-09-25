@@ -4,7 +4,7 @@
  */
 import type { LossSurface } from './lossSurfaces'
 
-export type OptimizerId = 'sgd' | 'momentum' | 'nesterov' | 'rmsprop' | 'adam'
+export type OptimizerId = 'sgd' | 'momentum' | 'nesterov' | 'adagrad' | 'rmsprop' | 'adam' | 'adamw'
 
 export interface OptimizerConfig {
   id: OptimizerId
@@ -14,32 +14,41 @@ export interface OptimizerConfig {
   /** Squared-gradient decay (RMSProp ρ, Adam β₂). */
   beta2?: number
   epsilon?: number
+  /** Decoupled weight decay λ (AdamW). */
+  weightDecay?: number
 }
 
 export interface Optimizer {
   config: OptimizerConfig
-  /** Returns the updated parameters. `gradAt` lets Nesterov look ahead. */
-  step(theta: number[], grad: number[], gradAt?: (theta: number[]) => number[]): number[]
+  /**
+   * Returns the updated parameters. `gradAt` lets Nesterov look ahead;
+   * `lr` overrides the configured learning rate (for schedules).
+   */
+  step(theta: number[], grad: number[], gradAt?: (theta: number[]) => number[], lr?: number): number[]
 }
 
 export const OPTIMIZER_LABELS: Record<OptimizerId, string> = {
   sgd: 'SGD',
   momentum: 'Momentum',
   nesterov: 'Nesterov',
+  adagrad: 'AdaGrad',
   rmsprop: 'RMSProp',
   adam: 'Adam',
+  adamw: 'AdamW',
 }
 
 export const DEFAULT_OPTIMIZER_CONFIGS: Record<OptimizerId, OptimizerConfig> = {
   sgd: { id: 'sgd', learningRate: 0.01 },
   momentum: { id: 'momentum', learningRate: 0.01, beta1: 0.9 },
   nesterov: { id: 'nesterov', learningRate: 0.01, beta1: 0.9 },
+  adagrad: { id: 'adagrad', learningRate: 0.1, epsilon: 1e-8 },
   rmsprop: { id: 'rmsprop', learningRate: 0.01, beta2: 0.9, epsilon: 1e-8 },
   adam: { id: 'adam', learningRate: 0.05, beta1: 0.9, beta2: 0.999, epsilon: 1e-8 },
+  adamw: { id: 'adamw', learningRate: 0.05, beta1: 0.9, beta2: 0.999, epsilon: 1e-8, weightDecay: 0.01 },
 }
 
 export function createOptimizer(config: OptimizerConfig): Optimizer {
-  const lr = config.learningRate
+  const baseLr = config.learningRate
   const b1 = config.beta1 ?? 0.9
   const b2 = config.beta2 ?? 0.999
   const eps = config.epsilon ?? 1e-8
@@ -48,8 +57,9 @@ export function createOptimizer(config: OptimizerConfig): Optimizer {
   let t = 0
   return {
     config,
-    step(theta, grad, gradAt) {
+    step(theta, grad, gradAt, lrOverride) {
       t++
+      const lr = lrOverride ?? baseLr
       switch (config.id) {
         case 'sgd':
           // θ ← θ − η g
@@ -69,13 +79,20 @@ export function createOptimizer(config: OptimizerConfig): Optimizer {
           const vel = v
           return theta.map((p, i) => p - lr * vel[i])
         }
+        case 'adagrad': {
+          // s ← s + g² ; θ ← θ − η g / (√s + ε)   (Duchi et al., 2011)
+          s = (s ?? theta.map(() => 0)).map((si, i) => si + grad[i] ** 2)
+          const sq = s
+          return theta.map((p, i) => p - (lr * grad[i]) / (Math.sqrt(sq[i]) + eps))
+        }
         case 'rmsprop': {
           // s ← ρ s + (1 − ρ) g² ; θ ← θ − η g / (√s + ε)
           s = (s ?? theta.map(() => 0)).map((si, i) => b2 * si + (1 - b2) * grad[i] ** 2)
           const sq = s
           return theta.map((p, i) => p - (lr * grad[i]) / (Math.sqrt(sq[i]) + eps))
         }
-        case 'adam': {
+        case 'adam':
+        case 'adamw': {
           // m ← β₁m + (1−β₁)g ; v ← β₂v + (1−β₂)g² ; bias-correct ; θ ← θ − η m̂/(√v̂ + ε)
           v = (v ?? theta.map(() => 0)).map((mi, i) => b1 * mi + (1 - b1) * grad[i])
           s = (s ?? theta.map(() => 0)).map((si, i) => b2 * si + (1 - b2) * grad[i] ** 2)
@@ -83,7 +100,9 @@ export function createOptimizer(config: OptimizerConfig): Optimizer {
           const sq = s
           const c1 = 1 - b1 ** t
           const c2 = 1 - b2 ** t
-          return theta.map((p, i) => p - (lr * (m[i] / c1)) / (Math.sqrt(sq[i] / c2) + eps))
+          // AdamW (Loshchilov & Hutter, 2019) decays weights directly instead of adding λθ to g.
+          const wd = config.id === 'adamw' ? (config.weightDecay ?? 0) : 0
+          return theta.map((p, i) => p - lr * ((m[i] / c1) / (Math.sqrt(sq[i] / c2) + eps) + wd * p))
         }
       }
     },

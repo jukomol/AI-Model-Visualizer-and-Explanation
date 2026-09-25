@@ -14,15 +14,15 @@ import { useThemeMode } from '@/hooks/useThemeMode'
 
 const LandscapeScene = lazy(() => import('./LandscapeScene'))
 
-const OPTIMIZERS: OptimizerId[] = ['sgd', 'momentum', 'nesterov', 'rmsprop', 'adam']
+const OPTIMIZERS: Exclude<OptimizerId, 'adamw'>[] = ['sgd', 'momentum', 'nesterov', 'adagrad', 'rmsprop', 'adam']
 /** Colour follows the optimiser, never its rank in the list. */
-const SLOT: Record<OptimizerId, number> = { sgd: 0, momentum: 1, nesterov: 2, rmsprop: 4, adam: 6 }
+const SLOT: Record<OptimizerId, number> = { sgd: 0, momentum: 1, nesterov: 2, adagrad: 3, rmsprop: 4, adam: 6, adamw: 7 }
 
-const DEFAULT_LR: Record<string, Record<OptimizerId, number>> = {
-  bowl: { sgd: 0.1, momentum: 0.03, nesterov: 0.03, rmsprop: 0.05, adam: 0.1 },
-  rosenbrock: { sgd: 0.001, momentum: 0.0005, nesterov: 0.0005, rmsprop: 0.005, adam: 0.02 },
-  himmelblau: { sgd: 0.01, momentum: 0.003, nesterov: 0.003, rmsprop: 0.05, adam: 0.1 },
-  saddle: { sgd: 0.05, momentum: 0.03, nesterov: 0.03, rmsprop: 0.02, adam: 0.05 },
+const DEFAULT_LR: Record<string, Record<Exclude<OptimizerId, 'adamw'>, number>> = {
+  bowl: { sgd: 0.1, momentum: 0.03, nesterov: 0.03, adagrad: 0.5, rmsprop: 0.05, adam: 0.1 },
+  rosenbrock: { sgd: 0.001, momentum: 0.0005, nesterov: 0.0005, adagrad: 0.1, rmsprop: 0.005, adam: 0.02 },
+  himmelblau: { sgd: 0.01, momentum: 0.003, nesterov: 0.003, adagrad: 0.5, rmsprop: 0.05, adam: 0.1 },
+  saddle: { sgd: 0.05, momentum: 0.03, nesterov: 0.03, adagrad: 0.3, rmsprop: 0.02, adam: 0.05 },
 }
 
 export interface LossLandscape3DProps {
@@ -34,8 +34,8 @@ export default function LossLandscape3D({ surface: initialSurface = 'rosenbrock'
   const report = useChallengeReporter()
   const [surfaceId, setSurfaceId] = useState<string>(initialSurface)
   const surface = SURFACES[surfaceId]
-  const [enabled, setEnabled] = useState<Set<OptimizerId>>(new Set(['sgd', 'momentum', 'adam']))
-  const [lrs, setLrs] = useState<Record<OptimizerId, number>>(DEFAULT_LR[initialSurface])
+  const [enabled, setEnabled] = useState<Set<Exclude<OptimizerId, 'adamw'>>>(new Set(['sgd', 'momentum', 'adam']))
+  const [lrs, setLrs] = useState<Record<Exclude<OptimizerId, 'adamw'>, number>>(DEFAULT_LR[initialSurface])
   const [beta, setBeta] = useState(0.9)
   const [steps, setSteps] = useState(300)
   const [start, setStart] = useState<[number, number]>(surface.start)

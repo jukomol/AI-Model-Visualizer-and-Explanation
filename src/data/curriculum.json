@@ -547,7 +547,8 @@
       "title": "Multilayer Perceptrons",
       "summary": "Stack non-linear layers to bend decision boundaries around spirals and circles — the universal approximation theorem in action.",
       "prerequisites": [
-        "backpropagation"
+        "backpropagation",
+        "activation-functions"
       ],
       "estimatedMinutes": 15,
       "objectives": [
@@ -1282,6 +1283,488 @@
         "QuantizationViz"
       ],
       "route": "/learn/quantization"
+    },
+    {
+      "id": "loss-functions",
+      "track": "foundations",
+      "title": "Loss Functions",
+      "summary": "MSE, MAE, Huber, quantile, cross-entropy, hinge and focal losses: what each one rewards, how its gradient behaves, and when to use it.",
+      "prerequisites": [
+        "gradient-descent"
+      ],
+      "estimatedMinutes": 20,
+      "objectives": [
+        "Relate a loss's shape to the gradient each example contributes",
+        "Choose robust losses when data has outliers",
+        "Explain classification losses as surrogates for the 0–1 loss",
+        "Pick a loss that matches the question you are asking (mean, median, quantile)"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Mean squared error",
+          "tex": "L_{\\text{MSE}} = \\frac1n\\sum_i (\\hat y_i - y_i)^2 \\;\\Rightarrow\\; \\hat y^\\star = \\mathbb E[y\\mid x]"
+        },
+        {
+          "label": "Mean absolute error",
+          "tex": "L_{\\text{MAE}} = \\frac1n\\sum_i |\\hat y_i - y_i| \\;\\Rightarrow\\; \\hat y^\\star = \\operatorname{median}(y\\mid x)"
+        },
+        {
+          "label": "Huber",
+          "tex": "L_\\delta(r) = \\begin{cases} \\tfrac12 r^2 & |r| \\le \\delta \\\\ \\delta\\,(|r| - \\tfrac12\\delta) & |r| > \\delta \\end{cases}"
+        },
+        {
+          "label": "Cross-entropy (margin form)",
+          "tex": "L(m) = \\log(1 + e^{-m}),\\quad m = y\\,f(x),\\ y\\in\\{-1,+1\\}"
+        },
+        {
+          "label": "Focal loss",
+          "tex": "L_{\\text{focal}} = -(1 - p_t)^{\\gamma}\\log p_t"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "P. J. Huber",
+          "year": 1964,
+          "title": "Robust Estimation of a Location Parameter",
+          "venue": "Annals of Mathematical Statistics, 35(1), 73–101",
+          "url": "https://doi.org/10.1214/aoms/1177703732"
+        },
+        {
+          "authors": "R. Koenker, G. Bassett",
+          "year": 1978,
+          "title": "Regression Quantiles",
+          "venue": "Econometrica, 46(1), 33–50",
+          "url": "https://doi.org/10.2307/1913643"
+        },
+        {
+          "authors": "P. L. Bartlett, M. I. Jordan, J. D. McAuliffe",
+          "year": 2006,
+          "title": "Convexity, Classification, and Risk Bounds",
+          "venue": "Journal of the American Statistical Association, 101(473), 138–156",
+          "url": "https://doi.org/10.1198/016214505000000907"
+        },
+        {
+          "authors": "T.-Y. Lin, P. Goyal, R. Girshick, K. He, P. Dollár",
+          "year": 2017,
+          "title": "Focal Loss for Dense Object Detection",
+          "venue": "ICCV 2017",
+          "url": "https://arxiv.org/abs/1708.02002"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "With at least 6 outliers in the data, choose a loss (and δ) whose fitted slope is within 5% of the true slope. Least squares misses by over 40%.",
+        "metric": "robust-slope-error",
+        "comparator": "lte",
+        "threshold": 0.05,
+        "unit": "relative error"
+      },
+      "visualizers": [
+        "LossFunctionExplorer"
+      ],
+      "route": "/learn/loss-functions"
+    },
+    {
+      "id": "regularization",
+      "track": "foundations",
+      "title": "Regularisation & the Bias–Variance Trade-off",
+      "summary": "Why a model that fits the training data perfectly can fail on new data, and how L2, L1, early stopping and dropout keep capacity in check.",
+      "prerequisites": [
+        "loss-functions"
+      ],
+      "estimatedMinutes": 20,
+      "objectives": [
+        "Diagnose under- and over-fitting from train/validation curves",
+        "Explain how L2 shrinks and L1 zeroes coefficients",
+        "Choose the regularisation strength with a validation set",
+        "Connect weight decay, early stopping and dropout to the same idea"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Bias–variance decomposition",
+          "tex": "\\mathbb E\\big[(y - \\hat f(x))^2\\big] = \\operatorname{Bias}[\\hat f(x)]^2 + \\operatorname{Var}[\\hat f(x)] + \\sigma^2"
+        },
+        {
+          "label": "Ridge (L2)",
+          "tex": "\\min_{\\mathbf w}\\ \\tfrac1n\\|X\\mathbf w - \\mathbf y\\|^2 + \\lambda\\|\\mathbf w\\|_2^2 \\;\\Rightarrow\\; \\mathbf w = (X^\\top X/n + \\lambda I)^{-1}X^\\top\\mathbf y/n"
+        },
+        {
+          "label": "Lasso (L1)",
+          "tex": "\\min_{\\mathbf w}\\ \\tfrac1{2n}\\|X\\mathbf w - \\mathbf y\\|^2 + \\lambda\\|\\mathbf w\\|_1"
+        },
+        {
+          "label": "Soft-thresholding",
+          "tex": "w_j \\leftarrow \\operatorname{sign}(\\rho_j)\\,\\max(0, |\\rho_j| - \\lambda)"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "A. E. Hoerl, R. W. Kennard",
+          "year": 1970,
+          "title": "Ridge Regression: Biased Estimation for Nonorthogonal Problems",
+          "venue": "Technometrics, 12(1), 55–67",
+          "url": "https://doi.org/10.1080/00401706.1970.10488634"
+        },
+        {
+          "authors": "R. Tibshirani",
+          "year": 1996,
+          "title": "Regression Shrinkage and Selection via the Lasso",
+          "venue": "Journal of the Royal Statistical Society B, 58(1), 267–288",
+          "url": "https://doi.org/10.1111/j.2517-6161.1996.tb02080.x"
+        },
+        {
+          "authors": "S. Geman, E. Bienenstock, R. Doursat",
+          "year": 1992,
+          "title": "Neural Networks and the Bias/Variance Dilemma",
+          "venue": "Neural Computation, 4(1), 1–58",
+          "url": "https://doi.org/10.1162/neco.1992.4.1.1"
+        },
+        {
+          "authors": "L. Prechelt",
+          "year": 1998,
+          "title": "Early Stopping — But When?",
+          "venue": "Neural Networks: Tricks of the Trade, Springer",
+          "url": "https://doi.org/10.1007/3-540-49430-8_3"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "A degree-12 polynomial wildly over-fits 15 noisy points. Keep degree ≥ 10 and use regularisation to bring the validation MSE down to 0.15 or less.",
+        "metric": "reg-val-mse",
+        "comparator": "lte",
+        "threshold": 0.15,
+        "unit": "validation MSE"
+      },
+      "visualizers": [
+        "RegularizationViz"
+      ],
+      "route": "/learn/regularization"
+    },
+    {
+      "id": "decision-trees",
+      "track": "foundations",
+      "title": "Decision Trees & Random Forests",
+      "summary": "Recursive axis-aligned splits chosen by impurity, why deep trees over-fit, and how bagging many decorrelated trees fixes it.",
+      "prerequisites": [],
+      "estimatedMinutes": 18,
+      "objectives": [
+        "Compute Gini impurity and information gain",
+        "Explain why greedy splits struggle with XOR",
+        "Control tree complexity with depth and leaf size",
+        "Explain why averaging bootstrapped trees reduces variance"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Gini impurity",
+          "tex": "G = 1 - \\sum_k p_k^2"
+        },
+        {
+          "label": "Entropy",
+          "tex": "H = -\\sum_k p_k \\log_2 p_k"
+        },
+        {
+          "label": "Split gain",
+          "tex": "\\Delta = I(\\text{parent}) - \\tfrac{n_L}{n} I(L) - \\tfrac{n_R}{n} I(R)"
+        },
+        {
+          "label": "Forest prediction",
+          "tex": "\\hat p(k\\mid x) = \\frac1B\\sum_{b=1}^B \\hat p_b(k\\mid x)"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "L. Breiman, J. Friedman, R. Olshen, C. Stone",
+          "year": 1984,
+          "title": "Classification and Regression Trees",
+          "venue": "Wadsworth"
+        },
+        {
+          "authors": "J. R. Quinlan",
+          "year": 1986,
+          "title": "Induction of Decision Trees",
+          "venue": "Machine Learning, 1, 81–106",
+          "url": "https://doi.org/10.1007/BF00116251"
+        },
+        {
+          "authors": "L. Breiman",
+          "year": 2001,
+          "title": "Random Forests",
+          "venue": "Machine Learning, 45, 5–32",
+          "url": "https://doi.org/10.1023/A:1010933404324"
+        },
+        {
+          "authors": "J. H. Friedman",
+          "year": 2001,
+          "title": "Greedy Function Approximation: A Gradient Boosting Machine",
+          "venue": "Annals of Statistics, 29(5), 1189–1232",
+          "url": "https://doi.org/10.1214/aos/1013203451"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "On held-out noisy moons, reach a test accuracy of 80% or more. The default fully-grown tree memorises the noise and scores about 78%.",
+        "metric": "tree-test-accuracy",
+        "comparator": "gte",
+        "threshold": 0.8,
+        "unit": "test accuracy"
+      },
+      "visualizers": [
+        "DecisionTreeViz"
+      ],
+      "route": "/learn/decision-trees"
+    },
+    {
+      "id": "activation-functions",
+      "track": "cv",
+      "title": "Activation Functions & Initialisation",
+      "summary": "Sigmoid, tanh, ReLU, GELU and friends: their shapes, derivatives and saturation — and how activation plus initialisation decide whether deep networks can train.",
+      "prerequisites": [
+        "backpropagation"
+      ],
+      "estimatedMinutes": 18,
+      "objectives": [
+        "Compare activation functions and their derivatives",
+        "Explain vanishing gradients from saturation",
+        "Match initialisation to activation (Xavier vs He)",
+        "Recognise dead ReLUs"
+      ],
+      "keyFormulas": [
+        {
+          "label": "ReLU and GELU",
+          "tex": "\\operatorname{ReLU}(x) = \\max(0, x),\\qquad \\operatorname{GELU}(x) = x\\,\\Phi(x)"
+        },
+        {
+          "label": "Gradient through L layers",
+          "tex": "\\frac{\\partial L}{\\partial \\mathbf a_0} = \\prod_{l=1}^{L} W_l^\\top \\operatorname{diag}\\big(\\phi'(\\mathbf z_l)\\big)\\,\\frac{\\partial L}{\\partial \\mathbf a_L}"
+        },
+        {
+          "label": "Xavier / He initialisation",
+          "tex": "W_{ij} \\sim \\mathcal N\\!\\big(0, \\tfrac{1}{n_{\\text{in}}}\\big)\\ \\ \\text{(Xavier)},\\qquad W_{ij} \\sim \\mathcal N\\!\\big(0, \\tfrac{2}{n_{\\text{in}}}\\big)\\ \\ \\text{(He)}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "X. Glorot, Y. Bengio",
+          "year": 2010,
+          "title": "Understanding the difficulty of training deep feedforward neural networks",
+          "venue": "AISTATS 2010",
+          "url": "https://proceedings.mlr.press/v9/glorot10a.html"
+        },
+        {
+          "authors": "V. Nair, G. E. Hinton",
+          "year": 2010,
+          "title": "Rectified Linear Units Improve Restricted Boltzmann Machines",
+          "venue": "ICML 2010",
+          "url": "https://www.cs.toronto.edu/~hinton/absps/reluICML.pdf"
+        },
+        {
+          "authors": "K. He, X. Zhang, S. Ren, J. Sun",
+          "year": 2015,
+          "title": "Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification",
+          "venue": "ICCV 2015",
+          "url": "https://arxiv.org/abs/1502.01852"
+        },
+        {
+          "authors": "D. Hendrycks, K. Gimpel",
+          "year": 2016,
+          "title": "Gaussian Error Linear Units (GELUs)",
+          "venue": "arXiv",
+          "url": "https://arxiv.org/abs/1606.08415"
+        },
+        {
+          "authors": "P. Ramachandran, B. Zoph, Q. V. Le",
+          "year": 2017,
+          "title": "Searching for Activation Functions",
+          "venue": "arXiv",
+          "url": "https://arxiv.org/abs/1710.05941"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "In a 20-layer network, choose an activation and initialisation so the gradient reaching the first layer is within 10× (one order of magnitude) of the last layer's.",
+        "metric": "depth-gradient-log-ratio",
+        "comparator": "lte",
+        "threshold": 1,
+        "unit": "|log₁₀ ratio|"
+      },
+      "visualizers": [
+        "ActivationExplorer"
+      ],
+      "route": "/learn/activation-functions"
+    },
+    {
+      "id": "optimizers",
+      "track": "cv",
+      "title": "Optimisers in Practice",
+      "summary": "SGD, momentum, Nesterov, AdaGrad, RMSProp, Adam and AdamW racing on a real network, plus learning-rate schedules, warm-up and how to choose.",
+      "prerequisites": [
+        "backpropagation",
+        "gradient-descent"
+      ],
+      "estimatedMinutes": 25,
+      "objectives": [
+        "Explain what each optimiser keeps in its state",
+        "Compare full-batch and mini-batch (stochastic) training",
+        "Design learning-rate schedules with warm-up and decay",
+        "Pick a sensible default optimiser and tune its learning rate"
+      ],
+      "keyFormulas": [
+        {
+          "label": "SGD with momentum",
+          "tex": "\\mathbf v_{t+1} = \\mu\\mathbf v_t + \\mathbf g_t,\\quad \\boldsymbol\\theta_{t+1} = \\boldsymbol\\theta_t - \\eta_t\\mathbf v_{t+1}"
+        },
+        {
+          "label": "AdaGrad",
+          "tex": "\\mathbf s_t = \\mathbf s_{t-1} + \\mathbf g_t^2,\\quad \\boldsymbol\\theta_{t+1} = \\boldsymbol\\theta_t - \\frac{\\eta\\,\\mathbf g_t}{\\sqrt{\\mathbf s_t} + \\epsilon}"
+        },
+        {
+          "label": "AdamW (decoupled weight decay)",
+          "tex": "\\boldsymbol\\theta_{t+1} = \\boldsymbol\\theta_t - \\eta_t\\Big(\\frac{\\hat{\\mathbf m}_t}{\\sqrt{\\hat{\\mathbf v}_t}+\\epsilon} + \\lambda\\boldsymbol\\theta_t\\Big)"
+        },
+        {
+          "label": "Cosine schedule",
+          "tex": "\\eta_t = \\eta_{\\min} + \\tfrac12(\\eta_0 - \\eta_{\\min})\\big(1 + \\cos(\\pi t/T)\\big)"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "J. Duchi, E. Hazan, Y. Singer",
+          "year": 2011,
+          "title": "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization",
+          "venue": "JMLR, 12, 2121–2159",
+          "url": "https://jmlr.org/papers/v12/duchi11a.html"
+        },
+        {
+          "authors": "I. Sutskever, J. Martens, G. Dahl, G. Hinton",
+          "year": 2013,
+          "title": "On the importance of initialization and momentum in deep learning",
+          "venue": "ICML 2013",
+          "url": "https://proceedings.mlr.press/v28/sutskever13.html"
+        },
+        {
+          "authors": "I. Loshchilov, F. Hutter",
+          "year": 2016,
+          "title": "SGDR: Stochastic Gradient Descent with Warm Restarts",
+          "venue": "ICLR 2017",
+          "url": "https://arxiv.org/abs/1608.03983"
+        },
+        {
+          "authors": "P. Goyal, P. Dollár, R. Girshick, et al.",
+          "year": 2017,
+          "title": "Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour",
+          "venue": "arXiv",
+          "url": "https://arxiv.org/abs/1706.02677"
+        },
+        {
+          "authors": "A. C. Wilson, R. Roelofs, M. Stern, N. Srebro, B. Recht",
+          "year": 2017,
+          "title": "The Marginal Value of Adaptive Gradient Methods in Machine Learning",
+          "venue": "NeurIPS 2017",
+          "url": "https://arxiv.org/abs/1705.08292"
+        },
+        {
+          "authors": "L. N. Smith, N. Topin",
+          "year": 2017,
+          "title": "Super-Convergence: Very Fast Training of Neural Networks Using Large Learning Rates",
+          "venue": "arXiv",
+          "url": "https://arxiv.org/abs/1708.07120"
+        },
+        {
+          "authors": "I. Loshchilov, F. Hutter",
+          "year": 2017,
+          "title": "Decoupled Weight Decay Regularization",
+          "venue": "ICLR 2019",
+          "url": "https://arxiv.org/abs/1711.05101"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "On two moons, tune plain SGD (no momentum) so it reaches a full-dataset loss of 0.30 or less within 400 steps. The default learning rate is far too timid.",
+        "metric": "race-sgd-loss",
+        "comparator": "lte",
+        "threshold": 0.3,
+        "unit": "loss"
+      },
+      "visualizers": [
+        "OptimizerRace",
+        "LossLandscape3D"
+      ],
+      "route": "/learn/optimizers"
+    },
+    {
+      "id": "q-learning",
+      "track": "modern",
+      "title": "Reinforcement Learning: Q-Learning",
+      "summary": "An agent learns to act from rewards alone: Bellman equations, value iteration, and model-free Q-learning with ε-greedy exploration.",
+      "prerequisites": [
+        "gradient-descent"
+      ],
+      "estimatedMinutes": 25,
+      "objectives": [
+        "Write the Bellman optimality equation",
+        "Run value iteration when the model is known",
+        "Explain the Q-learning update and the exploration–exploitation dilemma",
+        "Relate tabular Q-learning to deep Q-networks"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Return",
+          "tex": "G_t = \\sum_{k\\ge 0}\\gamma^k r_{t+k+1}"
+        },
+        {
+          "label": "Bellman optimality",
+          "tex": "Q^\\star(s,a) = \\mathbb E\\big[r + \\gamma\\max_{a'}Q^\\star(s',a')\\big]"
+        },
+        {
+          "label": "Q-learning update",
+          "tex": "Q(s,a) \\leftarrow Q(s,a) + \\alpha\\big[r + \\gamma\\max_{a'}Q(s',a') - Q(s,a)\\big]"
+        },
+        {
+          "label": "ε-greedy policy",
+          "tex": "a_t = \\begin{cases}\\text{random action} & \\text{with prob. } \\varepsilon\\\\ \\arg\\max_a Q(s_t,a) & \\text{otherwise}\\end{cases}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "R. Bellman",
+          "year": 1957,
+          "title": "Dynamic Programming",
+          "venue": "Princeton University Press"
+        },
+        {
+          "authors": "C. J. C. H. Watkins, P. Dayan",
+          "year": 1992,
+          "title": "Q-learning",
+          "venue": "Machine Learning, 8, 279–292",
+          "url": "https://doi.org/10.1007/BF00992698"
+        },
+        {
+          "authors": "V. Mnih, K. Kavukcuoglu, D. Silver, et al.",
+          "year": 2015,
+          "title": "Human-level control through deep reinforcement learning",
+          "venue": "Nature, 518, 529–533",
+          "url": "https://doi.org/10.1038/nature14236"
+        },
+        {
+          "authors": "R. S. Sutton, A. G. Barto",
+          "year": 2018,
+          "title": "Reinforcement Learning: An Introduction (2nd ed.)",
+          "venue": "MIT Press",
+          "note": "Freely available online from the authors."
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Train an agent whose greedy policy reaches the +1 goal from every free cell of the grid, not just from the start corner.",
+        "metric": "qlearning-success",
+        "comparator": "gte",
+        "threshold": 1,
+        "unit": "of cells"
+      },
+      "visualizers": [
+        "GridWorldViz"
+      ],
+      "route": "/learn/q-learning"
     }
   ]
 }
