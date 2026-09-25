@@ -1,0 +1,273 @@
+{
+  "version": 1,
+  "layerTypes": {
+    "input": {
+      "label": "Input",
+      "purpose": "The raw image enters the network as a 3-D tensor of pixel intensities: height × width × channels (1 channel for grayscale).",
+      "details": "Nothing is learned here. Pixel values are scaled to [0, 1] so that the first layer's weighted sums start in a well-behaved range.",
+      "math": "X \\in [0,1]^{H \\times W \\times C}"
+    },
+    "conv2d": {
+      "label": "Conv2D",
+      "purpose": "Feature extraction. Each filter is a small learned kernel that slides over every spatial position and responds strongly wherever its pattern (an edge, a corner, a curve) appears.",
+      "details": "Weights are shared across positions (translation equivariance) and each output only sees a local k×k window of every input channel (local connectivity). Stacking conv layers grows the receptive field so deeper filters respond to larger, more abstract patterns.",
+      "math": "Y_{i,j,k} = \\phi\\Big(b_k + \\sum_{u=0}^{K_h-1}\\sum_{v=0}^{K_w-1}\\sum_{c=0}^{C_{\\text{in}}-1} W_{u,v,c,k}\\; X_{s i+u,\\; s j+v,\\; c}\\Big)"
+    },
+    "maxPooling2d": {
+      "label": "MaxPooling2D",
+      "purpose": "Spatial downsampling. Keeps only the strongest response in each P×P window, halving the resolution while preserving which features were detected.",
+      "details": "No parameters. Provides a small amount of translation invariance and cuts computation for later layers. During back-propagation the gradient flows only to the arg-max position of each window.",
+      "math": "Y_{i,j,c} = \\max_{0 \\le u, v < P} X_{s i + u,\\; s j + v,\\; c}"
+    },
+    "averagePooling2d": {
+      "label": "AveragePooling2D",
+      "purpose": "Spatial downsampling by averaging each P×P window, as in the original LeNet-5 “subsampling” layers.",
+      "details": "No parameters. Smoother than max pooling: every input in the window receives an equal share of the gradient.",
+      "math": "Y_{i,j,c} = \\frac{1}{P^2}\\sum_{u=0}^{P-1}\\sum_{v=0}^{P-1} X_{s i + u,\\; s j + v,\\; c}"
+    },
+    "dropout": {
+      "label": "Dropout",
+      "purpose": "Regularisation. During training a random fraction p of activations is zeroed so the network cannot rely on any single feature; at inference it is the identity.",
+      "details": "TensorFlow.js uses inverted dropout: surviving activations are scaled by 1/(1 − p) during training, so nothing needs rescaling at inference time. The feature maps you see here are inference-mode, identical to the input.",
+      "math": "\\tilde X = \\frac{M \\odot X}{1 - p},\\quad M_{ijc} \\sim \\operatorname{Bernoulli}(1 - p)\\ \\ (\\text{training});\\qquad \\tilde X = X\\ \\ (\\text{inference})"
+    },
+    "flatten": {
+      "label": "Flatten",
+      "purpose": "Reshape. Unrolls the H × W × C feature volume into one long vector so fully-connected layers can consume it.",
+      "details": "No parameters and no arithmetic — just a change of indexing (row-major, channels last). Spatial layout is discarded from here on.",
+      "math": "y_{(i W + j) C + c} = X_{i,j,c}"
+    },
+    "dense": {
+      "label": "Dense",
+      "purpose": "Fully-connected combination. Every output unit is a weighted sum of all inputs, letting the network combine detected features into class evidence.",
+      "details": "Holds most of the parameters in small CNNs. The final Dense layer outputs one unnormalised score (logit) per class.",
+      "math": "\\mathbf y = \\phi\\big(W^{\\top}\\mathbf x + \\mathbf b\\big),\\quad W \\in \\mathbb R^{n_{\\text{in}} \\times n_{\\text{out}}}"
+    },
+    "softmax": {
+      "label": "Softmax",
+      "purpose": "Converts logits into a probability distribution over the classes: positive values that sum to one.",
+      "details": "Trained jointly with the categorical cross-entropy loss, whose gradient with respect to the logits is simply p − y.",
+      "math": "p_k = \\frac{e^{z_k}}{\\sum_{j} e^{z_j}}"
+    }
+  },
+  "models": [
+    {
+      "id": "tiny-cnn",
+      "name": "TinyShapeNet",
+      "description": "A compact modern CNN: two conv/max-pool stages, dropout and a small classifier head. Trains to high accuracy on the shapes dataset in a few seconds.",
+      "input": [
+        28,
+        28,
+        1
+      ],
+      "classes": [
+        "circle",
+        "square",
+        "triangle",
+        "cross"
+      ],
+      "defaults": {
+        "learningRate": 0.003,
+        "epochs": 6,
+        "batchSize": 32
+      },
+      "layers": [
+        {
+          "id": "conv1",
+          "type": "conv2d",
+          "name": "Conv2D · 8 filters 3×3",
+          "filters": 8,
+          "kernelSize": 3,
+          "activation": "relu"
+        },
+        {
+          "id": "pool1",
+          "type": "maxPooling2d",
+          "name": "MaxPool 2×2",
+          "poolSize": 2
+        },
+        {
+          "id": "conv2",
+          "type": "conv2d",
+          "name": "Conv2D · 16 filters 3×3",
+          "filters": 16,
+          "kernelSize": 3,
+          "activation": "relu"
+        },
+        {
+          "id": "pool2",
+          "type": "maxPooling2d",
+          "name": "MaxPool 2×2",
+          "poolSize": 2
+        },
+        {
+          "id": "drop",
+          "type": "dropout",
+          "name": "Dropout p = 0.25",
+          "rate": 0.25
+        },
+        {
+          "id": "flatten",
+          "type": "flatten",
+          "name": "Flatten"
+        },
+        {
+          "id": "fc1",
+          "type": "dense",
+          "name": "Dense · 32 ReLU",
+          "units": 32,
+          "activation": "relu"
+        },
+        {
+          "id": "logits",
+          "type": "dense",
+          "name": "Dense · 4 logits",
+          "units": 4,
+          "activation": "linear"
+        },
+        {
+          "id": "softmax",
+          "type": "softmax",
+          "name": "Softmax"
+        }
+      ]
+    },
+    {
+      "id": "lenet5",
+      "name": "LeNet-5 (1998 style)",
+      "description": "LeCun et al.'s classic: tanh convolutions with average-pooling “subsampling”, then three fully-connected layers. Padded first convolution handles 28×28 inputs, as the original padded MNIST to 32×32.",
+      "input": [
+        28,
+        28,
+        1
+      ],
+      "classes": [
+        "circle",
+        "square",
+        "triangle",
+        "cross"
+      ],
+      "defaults": {
+        "learningRate": 0.002,
+        "epochs": 6,
+        "batchSize": 32
+      },
+      "layers": [
+        {
+          "id": "c1",
+          "type": "conv2d",
+          "name": "C1 · 6 filters 5×5",
+          "filters": 6,
+          "kernelSize": 5,
+          "padding": "same",
+          "activation": "tanh"
+        },
+        {
+          "id": "s2",
+          "type": "averagePooling2d",
+          "name": "S2 · AvgPool 2×2",
+          "poolSize": 2
+        },
+        {
+          "id": "c3",
+          "type": "conv2d",
+          "name": "C3 · 16 filters 5×5",
+          "filters": 16,
+          "kernelSize": 5,
+          "activation": "tanh"
+        },
+        {
+          "id": "s4",
+          "type": "averagePooling2d",
+          "name": "S4 · AvgPool 2×2",
+          "poolSize": 2
+        },
+        {
+          "id": "flatten",
+          "type": "flatten",
+          "name": "Flatten"
+        },
+        {
+          "id": "f5",
+          "type": "dense",
+          "name": "F5 · 120 tanh",
+          "units": 120,
+          "activation": "tanh"
+        },
+        {
+          "id": "f6",
+          "type": "dense",
+          "name": "F6 · 84 tanh",
+          "units": 84,
+          "activation": "tanh"
+        },
+        {
+          "id": "logits",
+          "type": "dense",
+          "name": "Output · 4 logits",
+          "units": 4,
+          "activation": "linear"
+        },
+        {
+          "id": "softmax",
+          "type": "softmax",
+          "name": "Softmax"
+        }
+      ]
+    },
+    {
+      "id": "mlp",
+      "name": "Plain MLP (no convolutions)",
+      "description": "A fully-connected baseline that flattens the image immediately. Compare its parameter count and learned weights with the CNNs.",
+      "input": [
+        28,
+        28,
+        1
+      ],
+      "classes": [
+        "circle",
+        "square",
+        "triangle",
+        "cross"
+      ],
+      "defaults": {
+        "learningRate": 0.002,
+        "epochs": 6,
+        "batchSize": 32
+      },
+      "layers": [
+        {
+          "id": "flatten",
+          "type": "flatten",
+          "name": "Flatten 784"
+        },
+        {
+          "id": "fc1",
+          "type": "dense",
+          "name": "Dense · 64 ReLU",
+          "units": 64,
+          "activation": "relu"
+        },
+        {
+          "id": "fc2",
+          "type": "dense",
+          "name": "Dense · 32 ReLU",
+          "units": 32,
+          "activation": "relu"
+        },
+        {
+          "id": "logits",
+          "type": "dense",
+          "name": "Dense · 4 logits",
+          "units": 4,
+          "activation": "linear"
+        },
+        {
+          "id": "softmax",
+          "type": "softmax",
+          "name": "Softmax"
+        }
+      ]
+    }
+  ]
+}

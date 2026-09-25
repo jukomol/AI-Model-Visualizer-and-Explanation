@@ -1,26 +1,9 @@
 import { CheckCircle2, Circle, Lock } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-import { curriculum, nodeStatus, topologicalOrder, type TrackId } from '@/lib/curriculum'
+import { curriculum, nodeStatus, topologicalOrder } from '@/lib/curriculum'
+import { TRACK_TEXT } from '@/lib/trackStyles'
 import { cn } from '@/lib/utils'
 import { useProgressStore } from '@/store/useProgressStore'
-
-export const TRACK_TEXT: Record<TrackId, string> = {
-  foundations: 'text-track-foundations',
-  cv: 'text-track-cv',
-  modern: 'text-track-modern',
-}
-
-export const TRACK_BG: Record<TrackId, string> = {
-  foundations: 'bg-track-foundations',
-  cv: 'bg-track-cv',
-  modern: 'bg-track-modern',
-}
-
-export const TRACK_BORDER: Record<TrackId, string> = {
-  foundations: 'border-track-foundations',
-  cv: 'border-track-cv',
-  modern: 'border-track-modern',
-}
 
 const ordered = topologicalOrder(curriculum.nodes)
 

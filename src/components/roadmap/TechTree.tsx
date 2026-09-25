@@ -1,8 +1,8 @@
-import { CheckCircle2, Circle, Lock } from 'lucide-react'
 import { useMemo } from 'react'
-import { computeTreeLayout, curriculum, getNode, nodeStatus, type NodeStatus } from '@/lib/curriculum'
+import { computeTreeLayout, curriculum, getNode, nodeStatus } from '@/lib/curriculum'
 import { cn } from '@/lib/utils'
-import { TRACK_BG, TRACK_BORDER, TRACK_TEXT } from '@/components/layout/Sidebar'
+import { TRACK_BG, TRACK_BORDER, TRACK_TEXT } from '@/lib/trackStyles'
+import { STATUS_ICON } from './statusIcon'
 
 const NODE_W = 150
 const NODE_H = 60
@@ -11,12 +11,6 @@ const LANE_GAP = 24
 const ROW_H = 100
 const HEADER_H = 56
 const LANE_W = SLOT_W * 2
-
-export const STATUS_ICON: Record<NodeStatus, typeof Lock> = {
-  locked: Lock,
-  available: Circle,
-  mastered: CheckCircle2,
-}
 
 export interface TechTreeProps {
   mastered: ReadonlySet<string>

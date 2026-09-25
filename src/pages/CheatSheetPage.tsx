@@ -7,7 +7,7 @@ import { ToggleRow } from '@/components/viz/Controls'
 import { generateCheatSheetMarkdown, selectCheatSheetNodes } from '@/lib/cheatsheet'
 import { curriculum } from '@/lib/curriculum'
 import { cn } from '@/lib/utils'
-import { TRACK_TEXT } from '@/components/layout/Sidebar'
+import { TRACK_TEXT } from '@/lib/trackStyles'
 import { useProgressStore } from '@/store/useProgressStore'
 
 export default function CheatSheetPage() {

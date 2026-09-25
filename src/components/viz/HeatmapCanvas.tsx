@@ -11,6 +11,8 @@ export interface HeatmapCanvasProps {
   range?: [number, number]
   /** CSS pixel size of the rendered element (the canvas itself is width×height). */
   displayWidth?: number | string
+  /** Optional explicit CSS height (stretches non-uniformly, useful for weight matrices). */
+  displayHeight?: number | string
   className?: string
   label?: string
   onClick?: () => void
@@ -18,7 +20,7 @@ export interface HeatmapCanvasProps {
 }
 
 /** Pixel-exact heatmap: one canvas pixel per value, scaled up with nearest-neighbour sampling. */
-export function HeatmapCanvas({ values, width, height, scale = 'sequential', range, displayWidth = 96, className, label, onClick, selected }: HeatmapCanvasProps) {
+export function HeatmapCanvas({ values, width, height, scale = 'sequential', range, displayWidth = 96, displayHeight, className, label, onClick, selected }: HeatmapCanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null)
   const mode = useThemeMode()
   useEffect(() => {
@@ -37,7 +39,7 @@ export function HeatmapCanvas({ values, width, height, scale = 'sequential', ran
       role="img"
       aria-label={label}
       className={cn('pixelated block rounded-sm border border-border/60', selected && 'outline-2 outline-offset-1 outline-primary', className)}
-      style={{ width: displayWidth, aspectRatio: `${width} / ${height}` }}
+      style={displayHeight !== undefined ? { width: displayWidth, height: displayHeight } : { width: displayWidth, aspectRatio: `${width} / ${height}` }}
     />
   )
   if (!onClick) return canvas

@@ -4,8 +4,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { curriculum, getNode, nodeStatus, type CurriculumNode } from '@/lib/curriculum'
 import { cn } from '@/lib/utils'
-import { TRACK_TEXT } from '@/components/layout/Sidebar'
-import { STATUS_ICON } from './TechTree'
+import { TRACK_TEXT } from '@/lib/trackStyles'
+import { STATUS_ICON } from './statusIcon'
 
 export function NodeCard({ node, mastered }: { node: CurriculumNode; mastered: ReadonlySet<string> }) {
   const status = nodeStatus(node, mastered)

@@ -49,11 +49,18 @@ export function layerGap(explosion: number): number {
   return 0.7 + 3.3 * explosion
 }
 
-export function layoutLayers(geoms: readonly LayerGeometry[], explosion: number): PlacedLayer[] {
+/**
+ * @param tilt rotation (radians) of every plane towards the viewer about the
+ *   vertical axis; a tilted plane of edge s adds s·sin(tilt) to the footprint.
+ */
+export function layoutLayers(geoms: readonly LayerGeometry[], explosion: number, tilt = 0): PlacedLayer[] {
   const e = Math.min(1, Math.max(0, explosion))
   const cg = channelGap(e)
   const gap = layerGap(e)
-  const thick = geoms.map((g) => (g.kind === 'volume' ? (g.count - 1) * cg + PLANE_THICKNESS : VECTOR_THICKNESS))
+  const lean = Math.abs(Math.sin(tilt))
+  const thick = geoms.map((g) =>
+    g.kind === 'volume' ? (g.count - 1) * cg + PLANE_THICKNESS + g.size * lean : VECTOR_THICKNESS + (g.size > 0 ? 0.28 * lean : 0),
+  )
   const placed: PlacedLayer[] = []
   let cursor = 0
   geoms.forEach((_, i) => {

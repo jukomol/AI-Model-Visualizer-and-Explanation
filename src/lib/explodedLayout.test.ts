@@ -25,6 +25,15 @@ describe('exploded layout', () => {
     }
   })
 
+  it('tilted planes widen each layer footprint but never overlap', () => {
+    const flat = layoutLayers(geoms, 0.3, 0)
+    const tilted = layoutLayers(geoms, 0.3, 0.55)
+    expect(tilted[0].thickness).toBeGreaterThan(flat[0].thickness)
+    for (let i = 1; i < tilted.length; i++) {
+      expect(tilted[i].x - tilted[i].thickness / 2).toBeGreaterThan(tilted[i - 1].x + tilted[i - 1].thickness / 2)
+    }
+  })
+
   it('exploding increases total length and channel spacing monotonically', () => {
     let prev = -1
     let prevGap = -1
