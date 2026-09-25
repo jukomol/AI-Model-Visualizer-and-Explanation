@@ -105,7 +105,7 @@ export function TechTree({ mastered, selected, recommended, onSelect }: TechTree
                 className={cn('size-4 shrink-0', status === 'mastered' ? 'text-success' : status === 'locked' ? 'text-muted-foreground' : TRACK_TEXT[n.track])}
                 aria-hidden
               />
-              <span className="line-clamp-2 leading-tight font-medium">{n.title}</span>
+              <span className="line-clamp-2 text-[13px] leading-tight font-medium">{n.title}</span>
               {recommended === n.id && (
                 <span className="absolute -top-2.5 right-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
                   Next up

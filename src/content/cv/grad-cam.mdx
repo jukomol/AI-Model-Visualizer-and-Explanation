@@ -1,0 +1,43 @@
+## Asking a network to show its work
+
+A classifier that answers "triangle, 97%" tells you nothing about *why*. It might be looking at the triangle's corners, or at an artefact in the background. **Class activation maps** highlight the regions of the input that drove a decision.
+
+## From CAM to Grad-CAM
+
+Zhou et al. (2016) noticed that when a network ends with global average pooling followed by a single linear layer, the class score is a weighted sum of the last convolutional feature maps $A^k$. Drawing that same weighted sum as an image gives a map of where the evidence is. That required a specific architecture. **Grad-CAM** (Selvaraju et al., 2017) generalises it to *any* CNN by using gradients as the weights:
+
+$$
+\alpha_k^c = \frac{1}{Z}\sum_i\sum_j \frac{\partial y^c}{\partial A^k_{ij}} \qquad\qquad L^c_{\text{Grad-CAM}} = \operatorname{ReLU}\Big(\sum_k \alpha_k^c A^k\Big)
+$$
+
+Here $y^c$ is the **logit** (pre-softmax score) of class $c$. The weight $\alpha_k^c$ asks: "if feature map $k$ grew everywhere, how much would the class score rise?" The ReLU keeps only evidence *for* the class. The map is then upsampled to the input size and overlaid.
+
+<GradCamViz />
+
+### Things to try
+
+1. If the network is untrained, press **Train 6 epochs**. It is the same TinyShapeNet as in the previous lesson, and it keeps its training if you already trained it there.
+2. Pick a **triangle** sample and explain the predicted class. With **conv2**, the heat usually concentrates on corners and edges.
+3. Set the target to a **wrong class**, for example "circle" for a square. The map shows what little evidence exists for that class, and the channel bars show many channels voting against it.
+4. Switch to **conv1**. The map is sharper but less semantic, because early layers respond to any edge whatever the class.
+5. **Draw** an ambiguous shape, such as a square with rounded corners, and compare the maps for "circle" and "square".
+
+<Callout type="insight" title="Why the last convolutional layer?">
+
+Deep convolutional layers combine the most semantic features with an intact spatial grid. After flattening, spatial layout is gone. Earlier layers keep more detail but respond to generic edges. The last conv layer is the sweet spot.
+
+</Callout>
+
+<Callout type="warning" title="Saliency is not proof">
+
+Explanations can be misleading. Different methods (gradients, occlusion, Integrated Gradients) disagree, some maps change little even when the model's weights are randomised, and a plausible heatmap can still hide a spurious shortcut. Use saliency maps to generate hypotheses, then test them, for example by occluding the highlighted region and checking that the prediction changes.
+
+</Callout>
+
+## Summary
+
+- Grad-CAM weights each feature map of a conv layer by the average gradient of the class logit with respect to it.
+- ReLU of the weighted sum, upsampled, shows where the evidence for the class lies.
+- It works for any CNN without retraining, but explanations should be checked, not trusted blindly.
+
+**Challenge:** a concept check on why Grad-CAM uses the last convolutional layer.

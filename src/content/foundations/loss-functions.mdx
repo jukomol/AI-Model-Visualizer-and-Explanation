@@ -1,0 +1,71 @@
+## The loss is the question you ask
+
+Training minimises a loss, so the loss *defines* what "good" means. Two models fitted to the same data with different losses answer different questions. Squared error estimates the **mean**, absolute error the **median**, and the pinball loss any **quantile** you like. In classification, the loss decides how much a model cares about points it already gets right.
+
+The key to understanding any loss is its **gradient**. That is what each example "says" to the optimiser.
+
+## Regression losses
+
+Write the residual as $r = \hat y - y$.
+
+| Loss | $L(r)$ | Gradient $dL/dr$ | Estimates |
+|---|---|---|---|
+| Squared (MSE) | $r^2$ | $2r$ | conditional mean |
+| Absolute (MAE) | $\lvert r\rvert$ | $\operatorname{sign}(r)$ | conditional median |
+| Huber | $\tfrac12 r^2$ if $\lvert r\rvert \le \delta$, else $\delta(\lvert r\rvert - \tfrac12\delta)$ | $r$ clipped to $[-\delta, \delta]$ | mean-like, robust |
+| Log-cosh | $\log\cosh r$ | $\tanh r$ | smooth Huber |
+| Quantile $\tau$ | $\tau u$ if $u \ge 0$, else $(\tau-1)u$, with $u = -r$ | $1 - \tau$ or $-\tau$ | $\tau$-quantile |
+
+The crucial column is the gradient. With MSE, an error ten times larger pulls ten times harder, so a single outlier can dominate a whole dataset. MAE, Huber and log-cosh all cap the pull at a constant, so an outlier gets one vote like everyone else.
+
+<LossFunctionExplorer initialTab="regression" />
+
+### Things to try
+
+1. Compare the **gradient** curves: MSE's is a straight line through the origin, MAE's a step, and Huber's a clipped line.
+2. Move **Huber δ**. Small δ behaves like MAE, large δ like MSE. δ marks the residual size at which you stop trusting a point.
+3. Add the **quantile** loss with τ = 0.9. Under-predicting costs 9× more than over-predicting, so the fitted line hugs the top 10% of the data. That is how you forecast "a demand level we will exceed only 10% of the time".
+4. Open the **Outliers** tab: the same line fitted with MSE and with a robust loss. Increase the number and size of the outliers.
+
+## Classification losses: surrogates for 0–1
+
+For a binary label $y \in \{-1, +1\}$ and a score $f(\mathbf x)$, the **margin** $m = y\,f(\mathbf x)$ is positive when the prediction is correct, and the larger it is, the more confident the correct prediction. What we care about is the **0–1 loss** $[m \le 0]$, but its gradient is zero almost everywhere, so optimisers learn nothing from it. We minimise convex **surrogates** instead:
+
+- **Hinge** $\max(0, 1 - m)$ (SVMs). Points beyond the margin contribute nothing, which gives sparse support vectors.
+- **Logistic** $\log(1 + e^{-m})$, which is the cross-entropy. It never quite reaches zero, and its output is a calibrated probability.
+- **Exponential** $e^{-m}$ (AdaBoost). It punishes confident mistakes explosively, so it is sensitive to label noise.
+- **Focal** $-(1 - p_t)^\gamma\log p_t$ (Lin et al., 2017). It down-weights easy, well-classified examples so training focuses on hard ones, which is crucial for object detectors, where background boxes vastly outnumber objects.
+
+Bartlett, Jordan and McAuliffe (2006) showed that convex surrogates like these are **classification-calibrated**: minimising them also drives down the true 0–1 risk.
+
+For more than two classes, the softmax cross-entropy $L = -\log \frac{e^{z_y}}{\sum_k e^{z_k}}$ has the famously simple gradient $\partial L / \partial z_k = p_k - [k = y]$.
+
+## When to use which
+
+<Callout type="insight" title="A practical cheat sheet">
+
+- **Regression, clean data, you want the mean** → MSE (fast and well understood).
+- **Regression with outliers or heavy-tailed noise** → Huber (tune δ to the noise scale) or MAE.
+- **You need prediction intervals or asymmetric costs** → quantile loss at several τ.
+- **Binary or multi-class classification** → cross-entropy, the default for neural networks.
+- **Maximum-margin classifiers** → hinge.
+- **Extreme class imbalance or dense detection** → focal loss, or class-weighted cross-entropy.
+- **Probabilities that must be calibrated** → cross-entropy (a proper scoring rule). Avoid the hinge.
+
+</Callout>
+
+<Callout type="warning" title="Robust losses are not magic">
+
+Huber and MAE resist **vertical** outliers, meaning wrong $y$ values. They do not protect against **high-leverage** points, meaning extreme $x$ values. For those you need robust regression methods designed for leverage, or better data cleaning.
+
+</Callout>
+
+## Summary
+
+- A loss's gradient decides how strongly each example pulls on the model.
+- Squared error is sensitive to outliers, while absolute and Huber losses bound each example's influence.
+- Classification losses are convex surrogates of the 0–1 loss, and their shapes trade off margins, probabilities and robustness.
+
+**Challenge:** with at least 6 outliers, choose a loss whose fitted slope is within 5% of the truth.
+
+<LossFunctionExplorer initialTab="outliers" />

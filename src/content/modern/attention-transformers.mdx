@@ -1,0 +1,71 @@
+## Letting every token look at every other token
+
+RNNs pass information step by step, so a word must survive dozens of recurrent updates to influence a distant one. **Attention** creates a direct connection between every pair of positions. Each token computes how relevant every other token is and takes a weighted average of their information.
+
+Bahdanau, Cho and Bengio (2014) introduced attention to let a translation decoder look back at the source sentence. Vaswani et al. (2017) went further in *Attention Is All You Need*: remove recurrence entirely and build the whole network from attention. That network is the **Transformer**, the architecture behind BERT, GPT and modern vision models.
+
+## Scaled dot-product attention
+
+Each token's vector is projected three ways: a **query** $\mathbf q$ ("what am I looking for?"), a **key** $\mathbf k$ ("what do I contain?") and a **value** $\mathbf v$ ("what do I pass on?"). Stacking them into matrices:
+
+$$
+\operatorname{Attention}(Q, K, V) = \operatorname{softmax}\!\Big(\frac{QK^\top}{\sqrt{d_k}} + M\Big)V
+$$
+
+Row $i$ of the softmax is a probability distribution saying how much token $i$ attends to each token $j$. The mask $M$ is $-\infty$ where attention is forbidden, for example the future positions in a language-model **decoder** (**causal masking**).
+
+<Callout type="math" title="Why divide by the square root of d_k?">
+
+If the components of $\mathbf q$ and $\mathbf k$ are independent with zero mean and unit variance, then $\mathbf q\cdot\mathbf k = \sum_{m=1}^{d_k} q_m k_m$ has variance $d_k$. With $d_k = 64$ the raw scores have a standard deviation of 8, which pushes the softmax into a nearly one-hot, **saturated** regime with vanishing gradients. Dividing by $\sqrt{d_k}$ restores unit variance.
+
+</Callout>
+
+<AttentionHeatmap />
+
+## Reading the three heads
+
+Real attention patterns are learned, but the heads in this visualizer are **constructed analytically**, so you can understand exactly why each one attends where it does.
+
+- **Previous-token head**: queries are positional encodings rotated back by one position. By the linear shift property below, $\mathbf q_i\cdot\mathbf k_j$ peaks at $j = i - 1$. Heads like this really do appear in trained Transformers and are a building block of "induction heads" (Olsson et al., 2022).
+- **Same-token head**: queries and keys share one projection of the token embedding, so identical words ("the" … "the", "cat" … "cat") attend strongly to each other.
+- **Untrained head**: random projections, as at initialisation. The pattern is diffuse and meaningless.
+
+### Things to try
+
+1. With the previous-token head, click different rows: each token's attention mass sits on its predecessor.
+2. Switch to the same-token head and type a sentence with repeated words.
+3. Turn off **Scale by 1/√d_k**. The mean entropy drops as the softmax sharpens. Then raise the **temperature** to flatten it again.
+4. Enable the **causal mask**. The upper triangle becomes empty, and the first token can only attend to itself.
+5. Toggle **raw scores QKᵀ** to see the logits before the softmax.
+
+## Positional encodings
+
+Attention by itself is **permutation-invariant**: shuffle the tokens and the outputs shuffle with them. Order must be injected explicitly. The original Transformer adds sinusoids of geometrically spaced frequencies:
+
+$$
+PE_{(p,\,2i)} = \sin\!\big(p/10000^{2i/d}\big), \qquad PE_{(p,\,2i+1)} = \cos\!\big(p/10000^{2i/d}\big)
+$$
+
+For every offset $\delta$ there is a fixed rotation matrix $R_\delta$ with $R_\delta\,PE(p) = PE(p + \delta)$. Relative positions are therefore *linear* functions of the encodings, which is exactly what the previous-token head exploits.
+
+## The Transformer block
+
+A Transformer layer is multi-head self-attention followed by a position-wise MLP, each wrapped in a **residual connection** and **layer normalisation**. **Multi-head** attention runs $h$ attention heads in parallel on lower-dimensional projections and concatenates the results, so different heads can specialise in syntax, position or coreference:
+
+$$
+\operatorname{MultiHead}(X) = \operatorname{Concat}(\text{head}_1, \dots, \text{head}_h)\,W^O
+$$
+
+<Callout type="warning" title="The quadratic cost">
+
+The attention matrix is $n \times n$, so memory and compute grow as $O(n^2)$ in the sequence length. Long-context models use tricks such as FlashAttention (exact, IO-aware), sparse or sliding-window attention, and linear-attention approximations.
+
+</Callout>
+
+## Summary
+
+- Attention computes a softmax-weighted average of values, with weights given by query–key similarity.
+- Scaling by $1/\sqrt{d_k}$ keeps the softmax out of saturation, and masks enforce causality.
+- Positional encodings supply order, and multi-head attention plus MLPs, residuals and normalisation make up a Transformer block.
+
+**Challenge:** a concept check on the $1/\sqrt{d_k}$ scaling.

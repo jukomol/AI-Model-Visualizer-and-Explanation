@@ -1,0 +1,47 @@
+## Summarising neighbourhoods
+
+After a convolution has detected features, we usually don't need to know their positions to the exact pixel. A **pooling** layer replaces each small window with a single summary. That shrinks the feature maps, cuts computation for later layers, and adds a little tolerance to small shifts.
+
+**Max pooling** keeps the strongest response in each $P \times P$ window, and **average pooling** keeps the mean:
+
+$$
+Y^{\max}_{i,j,c} = \max_{0 \le u,v < P} X_{s i+u,\ s j+v,\ c} \qquad\qquad Y^{\text{avg}}_{i,j,c} = \frac{1}{P^2}\sum_{u,v} X_{s i+u,\ s j+v,\ c}
+$$
+
+Pooling acts on every channel independently and has **no learnable parameters**. The usual choice is $P = s = 2$, which halves height and width.
+
+<PoolingViz />
+
+### Things to try
+
+1. Step through **max pooling** and watch the ringed cell: the arg-max that "wins" each window.
+2. Turn on **Show all gradient routes**. During back-propagation max pooling passes each output's gradient to its winning input only. All other inputs receive zero.
+3. Switch to **Average** pooling. The output is smoother and every input gets an equal share of the gradient.
+4. Try a **3 × 3** window on the 8 × 8 map: the last row and column don't fit and are simply dropped.
+
+<Callout type="math" title="The gradient of a max">
+
+For $y = \max(x_1, \dots, x_m)$ we have $\partial y/\partial x_i = 1$ if $x_i$ is the maximum and 0 otherwise. So the backward pass needs the arg-max positions recorded during the forward pass. The positions you see ringed are exactly what frameworks store.
+
+</Callout>
+
+## Pooling in modern architectures
+
+- **LeNet-5** (1998) used average pooling ("subsampling") with trainable scaling.
+- **AlexNet** and **VGG** used max pooling after groups of convolutions.
+- The **All Convolutional Net** (Springenberg et al., 2014) showed that strided convolutions can replace pooling entirely, letting the network *learn* how to downsample.
+- **Global average pooling** at the end of ResNets averages each channel over the whole map to a single number. This replaces huge fully-connected layers and enables class-activation maps (see *Grad-CAM*).
+
+<Callout type="warning" title="Pooling and precise location">
+
+Pooling discards exact positions, which is fine for classification but harmful when position is the output, as in segmentation or keypoint detection. Those architectures use less pooling, dilated convolutions, or skip connections that restore detail (U-Net).
+
+</Callout>
+
+## Summary
+
+- Pooling summarises each window with a max or a mean, per channel, with no weights.
+- $2 \times 2$ pooling with stride 2 halves the spatial size: $[26, 26, 8] \to [13, 13, 8]$.
+- Max pooling routes gradients only to the winning inputs.
+
+**Challenge:** predict the output shape of a pooling layer.

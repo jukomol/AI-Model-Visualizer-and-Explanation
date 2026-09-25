@@ -1,0 +1,62 @@
+## Why images need a different layer
+
+Flatten a modest 224 × 224 RGB image and you get 150,528 inputs. A dense layer with only 1,000 units would need 150 million weights, and it would have to learn separately that a cat in the top-left corner and a cat in the bottom-right are the same thing. **Convolutional layers** build two facts about images into the architecture:
+
+- **Locality**: nearby pixels are related, so each output looks only at a small window.
+- **Translation equivariance**: a pattern means the same thing anywhere, so the *same* small set of weights (a **kernel**) slides over every position.
+
+## The operation
+
+For a single-channel image $X$ and a $k \times k$ kernel $K$, with stride $s$ and zero padding $p$:
+
+$$
+Y_{i,j} = \sum_{u=0}^{k-1}\sum_{v=0}^{k-1} K_{u,v}\; X_{s i + u - p,\ s j + v - p}
+$$
+
+Each output is a **dot product** between the kernel and the patch under it. (Strictly this is cross-correlation, because the kernel is not flipped. Every deep-learning library does it this way and still calls it convolution.)
+
+<CNNFilterViewer />
+
+### Things to try
+
+1. Press **Slide** and watch the window move. Each output cell's calculation, all nine products and their sum, appears below the grids.
+2. With **Sobel X** on the *Vertical edge* or *Digit 7* image, outputs are large where intensity changes from left to right and zero on flat regions. The kernel is a finite-difference derivative.
+3. Switch to **Laplacian**. It gives zero on flat areas *and* on linear ramps, and responds only to curvature and edges.
+4. Edit the kernel. Try putting all nine weights at 1/9 (the box blur) and compare with the Gaussian.
+5. Change **stride** and **padding** and check the output size against the formula.
+
+## Output size
+
+$$
+n_{\text{out}} = \left\lfloor \frac{n + 2p - k}{s} \right\rfloor + 1
+$$
+
+"Valid" padding ($p = 0$) shrinks the image by $k - 1$. "Same" padding ($p = \lfloor k/2 \rfloor$ for odd $k$) keeps the size when $s = 1$. A stride of 2 roughly halves each dimension.
+
+## Channels and parameter counts
+
+Real layers take $C_{\text{in}}$ input channels (RGB, or earlier feature maps) and produce $C_{\text{out}}$ output channels. Each output channel has one $k \times k \times C_{\text{in}}$ kernel plus a bias:
+
+$$
+\#\text{params} = (k \cdot k \cdot C_{\text{in}} + 1)\cdot C_{\text{out}}
+$$
+
+A 3 × 3 convolution from 64 to 128 channels has $(9 \cdot 64 + 1)\cdot 128 = 73{,}856$ weights, whatever the image size. That is **weight sharing** at work.
+
+<Callout type="insight" title="Learned, not designed">
+
+Sobel and Laplacian kernels were designed by hand. In a CNN the kernel values are *learned* by back-propagation, and the first layer of a trained network typically rediscovers edge and colour-blob detectors on its own. Look at the conv1 kernels in the *Anatomy of a CNN* lesson after training.
+
+</Callout>
+
+## A short history
+
+Fukushima's **Neocognitron** (1980) already stacked local feature detectors with pooling, but trained them without gradients. LeCun and colleagues (1989) trained convolutional weights with back-propagation to read handwritten ZIP codes for the US Postal Service, which is the direct ancestor of every CNN since.
+
+## Summary
+
+- A convolution slides one small kernel over the input and takes a dot product at every position.
+- Output size follows $\lfloor (n + 2p - k)/s \rfloor + 1$, and parameters scale with the kernel size and channels, not with the image size.
+- Stacking convolutions builds features hierarchically: edges, then textures, parts and objects.
+
+**Challenge:** a quick check on convolution output sizes.

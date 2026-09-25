@@ -1,0 +1,66 @@
+## The problem back-propagation solves
+
+A network is a composition of simple functions: linear maps, then non-linearities, then linear maps again. To train it with gradient descent we need $\partial L/\partial w$ for **every** weight. Computing each derivative separately would repeat the same work millions of times. **Back-propagation** is the chain rule organised so that each intermediate derivative is computed exactly once, and the whole gradient costs about as much as one extra forward pass.
+
+## Forward pass
+
+For layer $l$ with weights $W^{(l)}$, bias $\mathbf b^{(l)}$ and activation $\phi$:
+
+$$
+\mathbf z^{(l)} = W^{(l)}\mathbf a^{(l-1)} + \mathbf b^{(l)}, \qquad \mathbf a^{(l)} = \phi\big(\mathbf z^{(l)}\big), \qquad \mathbf a^{(0)} = \mathbf x
+$$
+
+We store every $\mathbf z^{(l)}$ and $\mathbf a^{(l)}$, because the backward pass needs them.
+
+## Backward pass
+
+Define the **error signal** of a layer as $\boldsymbol\delta^{(l)} = \partial L/\partial\mathbf z^{(l)}$. For a sigmoid output unit trained with binary cross-entropy it is simply
+
+$$
+\delta^{(L)} = \hat y - y
+$$
+
+<Callout type="math" title="The recursion">
+
+A unit's pre-activation $z_j^{(l)}$ affects the loss only through the units it feeds in the next layer, so by the chain rule
+
+$$
+\delta_j^{(l)} = \phi'\big(z_j^{(l)}\big)\sum_k W_{kj}^{(l+1)}\,\delta_k^{(l+1)} \qquad\Longleftrightarrow\qquad \boldsymbol\delta^{(l)} = \big(W^{(l+1)\top}\boldsymbol\delta^{(l+1)}\big)\odot\phi'\big(\mathbf z^{(l)}\big)
+$$
+
+And since $z_j^{(l)} = \sum_i W_{ji}^{(l)}a_i^{(l-1)} + b_j^{(l)}$,
+
+$$
+\frac{\partial L}{\partial W_{ji}^{(l)}} = \delta_j^{(l)}\,a_i^{(l-1)}, \qquad \frac{\partial L}{\partial b_j^{(l)}} = \delta_j^{(l)}
+$$
+
+Each weight's gradient is "the error at its output times the activation at its input".
+
+</Callout>
+
+<BackpropViz />
+
+### Things to try
+
+1. In **Forward pass** view, pick each XOR example and read the activations flowing left to right.
+2. Switch to **Backward pass**. Every edge now shows $\partial L/\partial w$ and every unit shows its $\delta$. Choose an example the network gets wrong and see which weights receive the biggest gradients.
+3. Look at the **gradient check** table. Back-propagation agrees with a central finite difference $\frac{L(w+h) - L(w-h)}{2h}$ to many digits. Implementers run this check whenever they write a new layer.
+4. Press **Train**. With 2 hidden units and this initialisation, the loss **plateaus around 0.35**: one XOR pattern stays at $p \approx 0.5$, a local minimum. Try **New random initialisation**, or give the network **3 hidden units**, and it escapes.
+
+<Callout type="insight" title="Over-parameterisation helps optimisation">
+
+In this library's tests, a 2-2-1 network gets stuck on XOR in 4 of 12 random initialisations, while a 2-3-1 network converged in all 12. Extra capacity creates more paths downhill. That is part of why today's huge networks train more easily than their size suggests.
+
+</Callout>
+
+## Automatic differentiation
+
+Frameworks such as TensorFlow.js implement this bookkeeping automatically as **reverse-mode automatic differentiation** (Linnainmaa, 1970). Every operation records how to propagate a gradient backwards, and `tf.grad` replays the recording in reverse. You can try it in the Sandbox's *Tensor sandbox*.
+
+## Summary
+
+- The forward pass computes and stores activations, and the backward pass propagates error signals $\boldsymbol\delta$ with one matrix product per layer.
+- Weight gradients are outer products of each layer's error signal and its input activations.
+- Gradient checking against finite differences catches implementation bugs.
+
+**Challenge:** train the 2-hidden-unit network on XOR until the average loss is 0.05 or lower.

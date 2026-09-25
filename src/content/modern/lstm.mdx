@@ -1,0 +1,55 @@
+## A memory cell with gates
+
+The **Long Short-Term Memory** unit (Hochreiter & Schmidhuber, 1997) attacks the vanishing gradient at its source. Besides the hidden state $\mathbf h_t$, it keeps a **cell state** $\mathbf c_t$, a conveyor belt that information travels along with only element-wise, *gated* changes. Three sigmoid gates decide what to erase, what to write and what to reveal:
+
+$$
+\begin{aligned}
+\mathbf f_t &= \sigma(W_f\mathbf x_t + U_f\mathbf h_{t-1} + \mathbf b_f) && \text{forget gate}\\
+\mathbf i_t &= \sigma(W_i\mathbf x_t + U_i\mathbf h_{t-1} + \mathbf b_i) && \text{input gate}\\
+\mathbf o_t &= \sigma(W_o\mathbf x_t + U_o\mathbf h_{t-1} + \mathbf b_o) && \text{output gate}\\
+\mathbf g_t &= \tanh(W_g\mathbf x_t + U_g\mathbf h_{t-1} + \mathbf b_g) && \text{candidate}\\
+\mathbf c_t &= \mathbf f_t \odot \mathbf c_{t-1} + \mathbf i_t \odot \mathbf g_t\\
+\mathbf h_t &= \mathbf o_t \odot \tanh(\mathbf c_t)
+\end{aligned}
+$$
+
+(The forget gate was added by Gers, Schmidhuber and Cummins in 2000. The original LSTM effectively had $\mathbf f = 1$.)
+
+## Why gradients survive
+
+<Callout type="math" title="The additive highway">
+
+The cell update is **additive**. Along the direct path from $\mathbf c_{t-1}$ to $\mathbf c_t$ the Jacobian is simply $\operatorname{diag}(\mathbf f_t)$, with no weight matrix and no squashing derivative. Therefore
+
+$$
+\frac{\partial \mathbf c_T}{\partial \mathbf c_t} \approx \prod_{k=t+1}^{T} \mathbf f_k
+$$
+
+When the network learns to hold its forget gate near 1, information and gradient pass through dozens or hundreds of steps almost unchanged. The same idea returns as the residual connections of ResNets and Transformers.
+
+</Callout>
+
+<LSTMCellViz />
+
+### Things to try
+
+1. In the cell diagram, set the **input gate bias** high and the **forget bias** low. The cell overwrites its memory with the new candidate.
+2. Now do the opposite: forget bias high (≥ 4) and input bias low. Whatever $c_{t-1}$ is, $c_t \approx c_{t-1}$, and the cell *holds* its memory.
+3. In the sequence chart, a single pulse arrives at t = 5. With forget bias 2 the memory fades within a few dozen steps. Raise it to 5 and the cell still remembers most of the pulse at t = 60, while the vanilla RNN has long forgotten it.
+4. Compare the **∂c₆₀/∂c₅** tile with the memory curve. The gradient path and the memory path are the same.
+
+<Callout type="insight" title="Practical notes">
+
+- Initialise the forget-gate bias to 1 or more so the cell starts by remembering. Jozefowicz et al. (2015) found this closes much of the gap to more complex variants.
+- The **GRU** (Cho et al., 2014) merges the forget and input gates and drops the separate cell state: fewer parameters, similar performance.
+- LSTMs powered speech recognition, machine translation (sequence-to-sequence, 2014) and handwriting recognition, until Transformers took over many of these tasks after 2017.
+
+</Callout>
+
+## Summary
+
+- An LSTM adds a cell state updated additively under the control of forget, input and output gates.
+- The direct gradient path through the cell is a product of forget-gate values, not of weight matrices, so long-range gradients survive.
+- Gate biases act as priors: a large forget bias means "remember by default".
+
+**Challenge:** which gate settings carry the cell state unchanged?

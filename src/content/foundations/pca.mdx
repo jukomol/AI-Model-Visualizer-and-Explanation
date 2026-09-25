@@ -1,0 +1,58 @@
+## Compressing data without labels
+
+Real datasets have many correlated features. Height and arm span, pixel intensities of neighbouring pixels, or the four Iris flower measurements all move together. **Principal Component Analysis** finds new axes, ordered so that the first captures as much variance as possible, the second as much as remains, and so on. Keeping only the first few gives a compact, decorrelated summary of the data.
+
+## Maximising variance
+
+Centre the data (subtract the mean $\bar{\mathbf x}$). The variance of the projections onto a unit direction $\mathbf u$ is
+
+$$
+\operatorname{Var}(\mathbf u^\top \mathbf x) = \mathbf u^\top \Sigma\,\mathbf u, \qquad \Sigma = \frac{1}{n-1}\sum_i (\mathbf x_i - \bar{\mathbf x})(\mathbf x_i - \bar{\mathbf x})^\top
+$$
+
+<Callout type="math" title="Why the answer is an eigenvector">
+
+Maximise $\mathbf u^\top\Sigma\mathbf u$ subject to $\mathbf u^\top\mathbf u = 1$. The Lagrangian $\mathbf u^\top\Sigma\mathbf u - \lambda(\mathbf u^\top\mathbf u - 1)$ has gradient $2\Sigma\mathbf u - 2\lambda\mathbf u$, which vanishes when
+
+$$
+\Sigma\,\mathbf u = \lambda\,\mathbf u
+$$
+
+So the best direction is an eigenvector of the covariance matrix, and the variance it captures, $\mathbf u^\top\Sigma\mathbf u = \lambda$, is its eigenvalue. The first principal component is the eigenvector with the largest eigenvalue, and the later components are the remaining eigenvectors in decreasing order, all mutually orthogonal.
+
+</Callout>
+
+This library computes the eigenvectors with the **Jacobi eigenvalue algorithm**, which repeatedly applies small rotations until the covariance matrix becomes diagonal.
+
+<PCAViz />
+
+### Things to try
+
+1. In the **2-D** tab, rotate the orange axis with the angle slider. The orange dots are the projections. The *Share of λ₁ captured* tile peaks at exactly 100% when you hit the first principal component.
+2. Turn on **Reveal principal components** and check your angle.
+3. Lower the **correlation** towards 0. The data becomes round, λ₁ ≈ λ₂, and the direction of PC1 becomes almost arbitrary. PCA only helps when features are correlated.
+4. Switch to **Iris**. Four measurements per flower are projected onto two axes. PC1 alone explains about 92.5% of the variance, and the three species separate along it even though PCA never saw the labels.
+
+## PCA versus regression
+
+Both fit a line through a cloud of points, but they minimise different things. Least squares minimises **vertical** distances from the points to the line, because it treats $y$ as the target. PCA minimises the **perpendicular** distances, because it treats all features symmetrically. Pearson's 1901 paper was titled *On lines and planes of closest fit*, which is exactly this geometric problem.
+
+<Callout type="insight" title="How many components to keep?">
+
+Plot the **explained variance ratio** $\lambda_k / \sum_j\lambda_j$ (a scree plot), then keep components until the cumulative share reaches your target, often 90–99%, or until the curve flattens at an "elbow".
+
+</Callout>
+
+<Callout type="warning" title="Scale matters">
+
+PCA chases variance, so a feature measured in millimetres beats one measured in metres. When features have different units, standardise them first (PCA on the correlation matrix). The Iris features are all in centimetres, so the raw covariance is appropriate here.
+
+</Callout>
+
+## Summary
+
+- Principal components are the eigenvectors of the covariance matrix, ordered by eigenvalue (the variance each captures).
+- Projecting onto the first $k$ components gives the best $k$-dimensional linear reconstruction in squared error.
+- PCA is unsupervised, linear and sensitive to feature scale.
+
+**Challenge:** rotate the projection axis by hand until it captures at least 99% of the variance PC1 captures.

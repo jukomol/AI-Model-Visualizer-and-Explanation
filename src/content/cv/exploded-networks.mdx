@@ -1,0 +1,57 @@
+## A complete CNN, taken apart
+
+Time to put the pieces together. The network below is a real convolutional neural network, built with TensorFlow.js in this browser tab. It classifies 28 × 28 images of four shapes (circle, square, triangle, cross). Every image in the dataset is rendered procedurally, with random position, size, rotation, stroke and noise.
+
+<ExplodedNetworkViewer />
+
+## Reading the architecture
+
+**TinyShapeNet** is `Conv2D(8, 3×3) → MaxPool(2) → Conv2D(16, 3×3) → MaxPool(2) → Dropout(0.25) → Flatten → Dense(32) → Dense(4) → Softmax`. Follow the tensor shapes:
+
+| Layer | Output shape | Parameters |
+|---|---|---|
+| Input | [28, 28, 1] | 0 |
+| Conv2D 8 × 3×3, ReLU | [26, 26, 8] | (3·3·1 + 1)·8 = 80 |
+| MaxPool 2×2 | [13, 13, 8] | 0 |
+| Conv2D 16 × 3×3, ReLU | [11, 11, 16] | (3·3·8 + 1)·16 = 1,168 |
+| MaxPool 2×2 | [5, 5, 16] | 0 |
+| Dropout 0.25 | [5, 5, 16] | 0 |
+| Flatten | [400] | 0 |
+| Dense 32, ReLU | [32] | (400 + 1)·32 = 12,832 |
+| Dense 4 (logits) | [4] | (32 + 1)·4 = 132 |
+| Softmax | [4] | 0 |
+
+That is **14,212 parameters**, and 90% of them sit in the first dense layer. This is typical: convolutions are cheap, and fully-connected layers on large feature maps are expensive.
+
+### Things to try
+
+1. Drag the **Explosion** slider. Layers and channels spread apart so you can see every feature map.
+2. **Click a layer** to open the inspector. It shows the layer's purpose, the arithmetic behind its output shape, the parameter formula, the forward-pass equation, its weights and its live activations.
+3. Before training, open *Conv2D · 8 filters*: the kernels are random noise and the feature maps are just blurry copies of the input. Now press **Train 3 epochs** (it takes a few seconds on a GPU).
+4. After training, reopen the same layer. Several kernels have become edge or corner detectors, and the feature maps highlight edges of specific orientations.
+5. Choose **Draw your own** and sketch a shape. Every stroke re-runs the entire network, so you can watch each feature map and the softmax react.
+6. Compare the architectures in the dropdown: **LeNet-5** (1998, tanh and average pooling) and a **plain MLP** that flattens immediately. Look at the MLP's first dense layer: each unit's weights can be reshaped into a 28 × 28 "template".
+
+## Training, validation and over-fitting
+
+The training panel shows two curves. **Training loss** is measured on the 1,200 images the network learns from, and **validation loss** on 300 images it never trains on. If validation loss starts rising while training loss keeps falling, the network is memorising, not generalising.
+
+<Callout type="math" title="Dropout, precisely">
+
+During training, TensorFlow.js zeroes each activation with probability $p$ and scales the survivors by $1/(1-p)$ ("inverted dropout"). The *expected* activation is therefore unchanged, and at inference time dropout is simply the identity. That is why the dropout layer's feature maps in the viewer look identical to its input.
+
+</Callout>
+
+<Callout type="insight" title="From TinyShapeNet to AlexNet">
+
+AlexNet (Krizhevsky, Sutskever & Hinton, 2012) had the same ingredients at a far larger scale: 5 convolutional layers, max pooling, ReLU, dropout, 3 dense layers and 60 million parameters, trained on 1.2 million ImageNet images with two GPUs. It cut the top-5 error from about 26% to 15% and started the deep-learning era.
+
+</Callout>
+
+## Summary
+
+- A CNN alternates convolutions (feature extraction) and pooling (downsampling), then flattens into dense layers for classification.
+- Tensor shapes and parameter counts follow directly from kernel size, stride, padding and channels.
+- Watching kernels and feature maps before and after training shows *what* the network has learned.
+
+**Challenge:** tune the learning rate and number of epochs until the validation loss is 0.30 or lower.

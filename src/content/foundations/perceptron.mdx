@@ -1,0 +1,48 @@
+## A neuron that learns from its mistakes
+
+In 1958 Frank Rosenblatt described the **perceptron**, a model of a neuron that fires when a weighted sum of its inputs crosses a threshold:
+
+$$
+\hat y = \operatorname{sign}(\mathbf w^\top \mathbf x + b) \in \{-1, +1\}
+$$
+
+Its learning rule has no loss function and no derivatives. Look at one training example at a time. If it is classified correctly, do nothing. If not, nudge the weights towards it:
+
+$$
+\text{if } y\,(\mathbf w^\top\mathbf x + b) \le 0:\qquad \mathbf w \leftarrow \mathbf w + \eta\,y\,\mathbf x, \qquad b \leftarrow b + \eta\,y
+$$
+
+Geometrically, $\mathbf w$ is the normal vector of the decision line. Adding $y\,\mathbf x$ rotates it towards positive examples and away from negative ones.
+
+<PerceptronViz />
+
+### Things to try
+
+1. Press **Step** a few times. A red ring marks a mistake, which triggers an update, and a green ring a correct visit, which changes nothing.
+2. Press **Play** and watch the mistakes-per-epoch chart. On separable data it drops to zero, and then learning stops for good.
+3. Change the learning rate. The final line changes only by a scale factor. With $\mathbf w$ and $b$ starting at zero, η just rescales every update, and the sign test doesn't care about scale.
+4. Switch to **XOR**. The line spins forever and every epoch has mistakes.
+
+## The convergence theorem
+
+<Callout type="math" title="Novikoff's theorem (1962)">
+
+Suppose every point satisfies $\|\mathbf x_i\| \le R$ and some unit vector $\mathbf u$ separates the data with margin $\gamma$, meaning $y_i\,\mathbf u^\top\mathbf x_i \ge \gamma$. Then the perceptron makes at most $(R/\gamma)^2$ mistakes, *no matter the order of the data*.
+
+Sketch: each mistake increases $\mathbf w^\top\mathbf u$ by at least $\gamma$, but increases $\|\mathbf w\|^2$ by at most $R^2$. After $k$ mistakes, $k\gamma \le \mathbf w^\top \mathbf u \le \|\mathbf w\| \le \sqrt{k}\,R$, so $k \le (R/\gamma)^2$.
+
+</Callout>
+
+The theorem promises convergence to *some* separating line, not a good one. The line it stops at depends on the order of the examples and can sit uncomfortably close to a class. Support vector machines fix exactly that.
+
+## The XOR crisis
+
+In 1969 Minsky and Papert proved rigorously that a single-layer perceptron cannot compute XOR, or any function that is not linearly separable. The result, and how it was widely read, contributed to a long drop in neural-network funding. The way out, **hidden layers trained by back-propagation**, only became mainstream in 1986.
+
+## Summary
+
+- The perceptron updates only on mistakes: $\mathbf w \leftarrow \mathbf w + \eta y \mathbf x$.
+- On linearly separable data it provably converges in at most $(R/\gamma)^2$ mistakes.
+- On non-separable data (XOR) it never settles. A single linear unit simply cannot represent the function.
+
+**Challenge:** run the perceptron on separable data until it completes an epoch with zero mistakes.

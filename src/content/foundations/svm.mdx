@@ -1,0 +1,58 @@
+## Which separating line is best?
+
+When two classes can be separated, infinitely many lines do the job. The perceptron stops at whichever one it happens to find. Vapnik's insight was to pick the line that stays **as far as possible from both classes**. A wide empty band (the **margin**) makes the classifier robust to small perturbations and generalises better.
+
+For a classifier $f(\mathbf x) = \mathbf w^\top\mathbf x + b$, scale $\mathbf w$ so that the closest points satisfy $|f(\mathbf x)| = 1$. The two supporting lines $f = \pm 1$ are then $2/\|\mathbf w\|$ apart, so maximising the margin means minimising $\|\mathbf w\|$:
+
+$$
+\min_{\mathbf w, b}\ \tfrac12\|\mathbf w\|^2 \quad\text{subject to}\quad y_i(\mathbf w^\top\mathbf x_i + b) \ge 1 \ \ \forall i
+$$
+
+## Soft margins and the hinge loss
+
+Real data overlaps. Cortes and Vapnik (1995) allowed violations at a price $C$:
+
+$$
+\min_{\mathbf w, b}\ \tfrac12\|\mathbf w\|^2 + C\sum_i \max\big(0,\ 1 - y_i(\mathbf w^\top\mathbf x_i + b)\big)
+$$
+
+The second term is the **hinge loss**. It is zero for points safely outside the margin and grows linearly for points inside it or on the wrong side. Large $C$ tolerates few violations (a narrow, hard margin). Small $C$ accepts violations in exchange for a wider, more stable margin.
+
+## The dual problem and support vectors
+
+<Callout type="math" title="Lagrangian duality">
+
+Introducing a multiplier $\alpha_i \ge 0$ for each constraint and eliminating $\mathbf w$ and $b$ gives the dual:
+
+$$
+\max_{\boldsymbol\alpha}\ \sum_i\alpha_i - \tfrac12\sum_{i,j}\alpha_i\alpha_j y_i y_j\,\mathbf x_i^\top\mathbf x_j \quad\text{s.t.}\quad 0 \le \alpha_i \le C,\ \ \sum_i \alpha_i y_i = 0
+$$
+
+and the solution is $\mathbf w = \sum_i \alpha_i y_i \mathbf x_i$. By complementary slackness, $\alpha_i > 0$ only for points on or inside the margin: the **support vectors**. Every other point has $\alpha_i = 0$ and contributes nothing.
+
+</Callout>
+
+The visualizer solves the dual with **Sequential Minimal Optimisation** (Platt, 1998). SMO repeatedly picks two $\alpha$s and optimises them analytically while keeping $\sum_i \alpha_i y_i = 0$.
+
+<SVMViz />
+
+### Things to try
+
+1. Drag a point that is **not** ringed, one far from the boundary. Nothing happens, because its $\alpha$ is zero.
+2. Drag a ringed support vector. The whole solution moves with it.
+3. Switch to **Overlapping** data and sweep **C** from 0.01 to 1000. Watch the margin narrow and the number of support vectors drop.
+4. Turn on **Compare with a perceptron**. The perceptron's line separates the data too, but usually hugs one class.
+
+<Callout type="insight" title="The kernel trick (a preview)">
+
+The dual uses the data only through inner products $\mathbf x_i^\top\mathbf x_j$. Replace them with a kernel $k(\mathbf x_i, \mathbf x_j)$, such as the Gaussian $\exp(-\|\mathbf x_i - \mathbf x_j\|^2/2\sigma^2)$, and the same algorithm finds a maximum-margin boundary in a high-dimensional feature space it never computes explicitly. That lets SVMs curve around circles and moons.
+
+</Callout>
+
+## Summary
+
+- An SVM maximises the margin $2/\|\mathbf w\|$ between the classes.
+- The soft-margin form trades margin width against hinge-loss violations through $C$.
+- The solution depends only on the support vectors ($\alpha_i > 0$).
+
+**Challenge:** a concept check about which points actually determine the SVM.

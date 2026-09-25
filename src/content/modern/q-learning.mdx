@@ -1,0 +1,66 @@
+## Learning from rewards
+
+Supervised learning has labels, and unsupervised learning has structure. **Reinforcement learning (RL)** has only a reward signal. An **agent** acts in an **environment**, observes the new **state** and a **reward**, and must discover which actions lead to the most reward in the long run. Nobody tells it the right move, and rewards may arrive many steps after the actions that earned them.
+
+## The objective: expected return
+
+The agent maximises the **return**, the discounted sum of future rewards:
+
+$$
+G_t = r_{t+1} + \gamma\,r_{t+2} + \gamma^2 r_{t+3} + \dots = \sum_{k \ge 0}\gamma^k r_{t+k+1}
+$$
+
+The discount $\gamma \in [0, 1)$ makes near rewards worth more than distant ones and keeps the sum finite.
+
+## Values and the Bellman equation
+
+The **action value** $Q^\star(s, a)$ is the expected return from taking action $a$ in state $s$ and acting optimally afterwards. It satisfies Bellman's recursive **optimality equation**:
+
+$$
+Q^\star(s, a) = \mathbb E\Big[r + \gamma \max_{a'} Q^\star(s', a')\Big]
+$$
+
+Once you know $Q^\star$, acting optimally is trivial: in every state pick $\arg\max_a Q^\star(s, a)$.
+
+**Value iteration** (Bellman, 1957) solves this equation directly by repeated substitution, but it needs a **model** of the environment: all the transition probabilities and rewards.
+
+## Q-learning: learning without a model
+
+Watkins' **Q-learning** (1989; Watkins & Dayan, 1992) learns $Q^\star$ from experience alone. After each transition $(s, a, r, s')$ it nudges $Q(s, a)$ towards the one-step **temporal-difference target**:
+
+$$
+Q(s, a) \leftarrow Q(s, a) + \alpha\Big[\underbrace{r + \gamma\max_{a'}Q(s', a')}_{\text{target}} - Q(s, a)\Big]
+$$
+
+It is **off-policy**: it learns the value of the *greedy* policy even while behaving differently. As long as every state–action pair keeps being visited and the learning rate decays appropriately, it converges to $Q^\star$.
+
+<GridWorldViz />
+
+### Things to try
+
+1. Press **Train 100 episodes** a few times. Values spread backwards from the +1 goal, one step per visit. That is Bellman's recursion happening through experience.
+2. Watch the **Greedy success** tile. Starting every episode in the corner leaves distant cells unexplored, so their arrows are wrong or missing. Turn on **Exploring starts** and train more.
+3. Set **ε = 0**. The agent exploits its first idea and may never discover the goal. Set ε = 1 and it only wanders. Exploration versus exploitation is the central dilemma of RL.
+4. Compare **Learned** with **Optimal V\*(s)**. After enough training, max Q(s, a) matches value iteration.
+5. Make the floor **slippery** and train again. The agent learns to keep its distance from the −1 traps, preferring safer detours, because a slip next to a trap is costly.
+6. Lower **γ** to 0.6. Distant rewards barely matter now, and paths through the step penalty become less attractive.
+
+<Callout type="insight" title="From tables to deep Q-networks">
+
+A table works for 35 grid cells, not for Atari screens. **DQN** (Mnih et al., 2015) replaced the table with a CNN that maps pixels to Q-values and stabilised learning with **experience replay** and a slowly-updated **target network**. It reached human-level play on many Atari games from raw pixels and the score alone. Policy-gradient and actor-critic methods (such as PPO) power much of modern RL, including the RLHF used to align language models.
+
+</Callout>
+
+<Callout type="warning" title="Why RL is hard">
+
+Rewards are sparse and delayed, the data depends on the agent's own behaviour, exploration can be dangerous or costly in the real world, and small changes to hyper-parameters or reward design can change what the agent learns.
+
+</Callout>
+
+## Summary
+
+- RL maximises the expected discounted return from reward signals alone.
+- Q-learning updates $Q(s, a)$ towards $r + \gamma\max_{a'}Q(s', a')$ without needing a model of the environment.
+- Exploration (ε-greedy, exploring starts) is essential: states you never visit are never learned.
+
+**Challenge:** train an agent whose greedy policy reaches the goal from every free cell.

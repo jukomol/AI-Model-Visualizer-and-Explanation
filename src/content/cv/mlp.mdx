@@ -1,0 +1,52 @@
+## Bending the decision boundary
+
+Logistic regression draws one straight line. A **multilayer perceptron** first maps the input through one or more **hidden layers** of non-linear units, and then draws a line in that new representation. Each hidden unit contributes one "bend", and together they can wrap around spirals, rings and XOR.
+
+$$
+f(\mathbf x) = W_2\,\phi(W_1\mathbf x + \mathbf b_1) + \mathbf b_2
+$$
+
+## The universal approximation theorem
+
+<Callout type="math" title="Cybenko (1989), Hornik, Stinchcombe & White (1989)">
+
+A network with a **single** hidden layer of sigmoid units can approximate any continuous function on a compact domain to any accuracy, given enough hidden units. The same holds for ReLU and most non-polynomial activations.
+
+</Callout>
+
+The theorem says that such a network *exists*. It says nothing about how many units you need, whether gradient descent will find the right weights, or whether the result will generalise. In practice **depth** is far more efficient than width. Deep networks build features hierarchically and represent some functions with exponentially fewer units than shallow ones.
+
+<DatasetPainter model="mlp" preset="spiral" title="Multilayer perceptron on two spirals" />
+
+### Things to try
+
+1. Train with the defaults (2 hidden layers × 16 tanh units). Watch the regions wrap around the spiral arms.
+2. Drop to **1 hidden layer with 4 units**. There are too few bends, and the boundary cannot follow the spiral: that is **under-fitting**.
+3. Go to **4 layers × 32 units**, add more noise, and train for a long time. The boundary starts carving islands around individual points: that is **over-fitting**.
+4. Switch the activation to **ReLU**. The boundary becomes piecewise linear, polygonal rather than smooth.
+5. Try **sigmoid** with 4 layers. Training is noticeably slower because of saturation (see *Activation functions*).
+6. Paint your own dataset. A ring of one class around another is a classic test.
+
+## Multi-class outputs: softmax
+
+For $K$ classes, the network outputs $K$ scores (logits) $z_k$, which the softmax turns into probabilities:
+
+$$
+p_k = \frac{e^{z_k}}{\sum_j e^{z_j}}, \qquad L = -\log p_y, \qquad \frac{\partial L}{\partial z_k} = p_k - [k = y]
+$$
+
+Paint four classes with the brush selector (or pick the *Four clusters* preset) to see a softmax classifier carve the plane into four regions.
+
+<Callout type="insight" title="Depth versus width in practice">
+
+For small tabular problems, 1–3 hidden layers of 32–256 ReLU units, trained with Adam, is a strong start. When you need more capacity, grow depth together with good initialisation, normalisation and residual connections, not width alone.
+
+</Callout>
+
+## Summary
+
+- Hidden layers with non-linear activations let a network represent curved decision boundaries.
+- One hidden layer is enough *in principle* (universal approximation), but depth is usually more efficient.
+- Too little capacity under-fits and too much over-fits, so watch training and validation performance.
+
+**Challenge:** train an MLP on the two-spirals preset to a training accuracy of 95% or higher.

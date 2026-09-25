@@ -1,0 +1,58 @@
+## From numbers to probabilities
+
+Linear regression predicts any real number. For classification (spam or not spam, tumour or healthy) we want a **probability** between 0 and 1. Logistic regression keeps the linear score $z = \mathbf w^\top \mathbf x + b$ and squashes it with the **sigmoid**:
+
+$$
+p(y = 1 \mid \mathbf x) = \sigma(z) = \frac{1}{1 + e^{-z}}
+$$
+
+A score of 0 means 50/50, large positive scores approach 1, and large negative ones approach 0. The **decision boundary** $p = 0.5$ is exactly the set of points where $\mathbf w^\top\mathbf x + b = 0$, which is a straight line (a hyperplane in higher dimensions).
+
+## The right loss: cross-entropy
+
+Squared error on probabilities works poorly: it is not convex in $\mathbf w$, and it barely penalises confident mistakes. Instead we maximise the likelihood of the labels, which is the same as minimising the **binary cross-entropy**:
+
+$$
+L = -\frac{1}{n}\sum_{i} \Big[\, y_i \log p_i + (1 - y_i)\log(1 - p_i) \,\Big]
+$$
+
+A confident wrong prediction ($p \to 0$ when $y = 1$) costs $-\log p \to \infty$, so the model is strongly motivated never to be sure and wrong.
+
+<Callout type="math" title="A remarkably simple gradient">
+
+Using $\sigma'(z) = \sigma(z)(1 - \sigma(z))$, the derivative of the loss with respect to the score collapses to
+
+$$
+\frac{\partial L_i}{\partial z_i} = p_i - y_i \qquad\Rightarrow\qquad \nabla_{\mathbf w} L = \frac1n\sum_i (p_i - y_i)\,\mathbf x_i
+$$
+
+It is "prediction minus target, times input", the same shape as linear regression's gradient. You will meet $p - y$ again at the output of every neural classifier.
+
+</Callout>
+
+## Train it in your browser
+
+The painter below trains logistic regression with TensorFlow.js. The background shading is the predicted probability: strong colour means a confident prediction, and the colour changes where $p = 0.5$.
+
+<DatasetPainter model="logistic" preset="linear" allowModelSwitch={false} title="Logistic regression on painted data" />
+
+### Things to try
+
+1. Press **Train** on the linearly separable preset. The boundary settles quickly, and then the shading keeps *sharpening*. On separable data the likelihood keeps improving as $\|\mathbf w\| \to \infty$, so the weights grow without limit. That is one reason we add regularisation.
+2. Switch the preset to **XOR** or **Concentric circles** and train. Accuracy stalls around chance level, because no straight line can separate these classes.
+3. Paint a few points of the opposite class deep inside a cluster. Watch the boundary tilt towards them, but less violently than a perceptron would. Cross-entropy weighs all points smoothly.
+4. Try the **Four clusters** preset. With four classes the model becomes *multinomial* logistic regression: a softmax over four linear scores.
+
+<Callout type="insight" title="Logistic regression is a one-neuron network">
+
+A sigmoid unit trained with cross-entropy *is* logistic regression. Stack layers of such units and you get the multilayer perceptron. The same $p - y$ error signal then flows backwards through the network, which is back-propagation.
+
+</Callout>
+
+## Summary
+
+- Logistic regression turns a linear score into a probability with the sigmoid.
+- It is trained by minimising cross-entropy, whose gradient is simply $(p - y)\,\mathbf x$.
+- Its decision boundary is always linear, so XOR and concentric circles are out of reach without new features or hidden layers.
+
+**Challenge:** on the "Linearly separable" preset, train until the cross-entropy is 0.15 or lower.

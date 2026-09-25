@@ -1,9 +1,85 @@
-## Fitting a line
+## Why start with a straight line?
 
-We want the straight line $\hat y = w x + b$ that best explains a cloud of points.
+Almost every model in this curriculum, from logistic regression to transformers, is trained the same way: pick a family of functions with adjustable **parameters**, define a **loss** that measures how wrong the predictions are, and move the parameters to make the loss smaller. Linear regression is that recipe in its purest form, with just two numbers to learn.
+
+Given data points $(x_i, y_i)$ for $i = 1, \dots, n$, we model
+
+$$
+\hat y = w\,x + b
+$$
+
+where the **slope** $w$ and the **intercept** $b$ are the parameters.
+
+## Measuring "wrong": the mean squared error
+
+The residual $r_i = \hat y_i - y_i$ is how far the line misses point $i$. Squaring and averaging gives the **mean squared error (MSE)**:
 
 $$
 L(w, b) = \frac{1}{n}\sum_{i=1}^{n} (w x_i + b - y_i)^2
 $$
 
-<Callout type="insight">Squared error punishes large mistakes more than small ones.</Callout>
+Squaring does three useful things. It makes every error positive, it punishes large misses much more than small ones, and it turns $L$ into a smooth bowl (a convex quadratic) with exactly one lowest point.
+
+<Callout type="math" title="Deriving the least-squares solution">
+
+At the minimum both partial derivatives vanish:
+
+$$
+\frac{\partial L}{\partial b} = \frac{2}{n}\sum_i (w x_i + b - y_i) = 0 \quad\Rightarrow\quad b = \bar y - w\bar x
+$$
+
+Substituting into $\partial L / \partial w = 0$ gives
+
+$$
+w^\star = \frac{\sum_i (x_i - \bar x)(y_i - \bar y)}{\sum_i (x_i - \bar x)^2} = \frac{\operatorname{Cov}(x, y)}{\operatorname{Var}(x)}
+$$
+
+Legendre published this in 1805 to fit comet orbits, and Gauss claimed he had used it since 1795.
+
+</Callout>
+
+## Iterating instead of solving: gradient descent
+
+The closed form is exact, but it only exists for this particular model and loss. The general-purpose alternative is **gradient descent**: start somewhere, compute the slope of the loss, and take a step downhill.
+
+$$
+w \leftarrow w - \eta\,\frac{2}{n}\sum_i (w x_i + b - y_i)\,x_i, \qquad
+b \leftarrow b - \eta\,\frac{2}{n}\sum_i (w x_i + b - y_i)
+$$
+
+The **learning rate** $\eta$ sets the step size. The visualizer below runs exactly these updates on a famous real dataset.
+
+<RegressionPlayground />
+
+### Things to try
+
+1. With the defaults (η = 0.001, 200 epochs) the line barely moves. Look at the loss surface on the right: it is a long, thin valley. The path first drops into the valley floor, then creeps along it.
+2. Increase η step by step. Somewhere around η ≈ 0.011 the path starts zig-zagging across the valley and then **diverges**. The panel tells you when.
+3. Turn on **Standardise x**. The valley becomes an almost circular bowl, and a learning rate of 0.1 now converges in a few dozen epochs.
+4. Switch between Anscombe's four sets. All four have (almost) the same least-squares line, $\hat y \approx 3 + 0.5x$, and the same $R^2 \approx 0.67$, yet they look nothing alike.
+
+<Callout type="insight" title="Why the learning rate has a speed limit">
+
+For a quadratic loss the curvature is constant, captured by the Hessian matrix. Gradient descent is stable only when $\eta < 2/\lambda_{\max}$, where $\lambda_{\max}$ is the Hessian's largest eigenvalue. For Anscombe's set I, $\lambda_{\max} \approx 184$, so $\eta_{\max} \approx 0.0109$. The *smallest* eigenvalue ($\approx 0.22$) decides how slowly the flat direction converges. The ratio of the two (the **condition number**) is why raw inputs are slow. Standardising $x$ makes the eigenvalues nearly equal.
+
+</Callout>
+
+## Anscombe's lesson: always plot your data
+
+Anscombe built his quartet in 1973 to show that summary statistics can hide everything important. Set II is a curve, set III has one outlier dragging the slope, and set IV's slope rests entirely on a single point. The least-squares line is a *mean* of the data. It cannot tell you whether a line was the right model in the first place.
+
+<Callout type="warning" title="Common pitfalls">
+
+- **Extrapolation**: a line fitted on $x \in [4, 14]$ says nothing reliable about $x = 50$.
+- **Outliers**: squared error lets one extreme point dominate. The *Loss functions* lesson shows robust alternatives.
+- **Correlation is not causation**: a good fit does not mean $x$ causes $y$.
+
+</Callout>
+
+## Summary
+
+- Linear regression minimises the mean squared error of a straight-line fit.
+- The optimum has a closed form: slope = covariance ÷ variance.
+- Gradient descent reaches the same answer iteratively. The learning rate must stay below $2/\lambda_{\max}$, and feature scaling makes convergence dramatically faster.
+
+**Challenge:** get the MSE on set I down to 1.30 or less. You can win by patience (the right η and many epochs) or by the scaling trick.

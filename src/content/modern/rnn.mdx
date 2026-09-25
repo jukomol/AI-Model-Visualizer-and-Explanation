@@ -1,0 +1,53 @@
+## Networks with memory
+
+Text, audio, sensor streams and stock prices arrive as **sequences**, where order matters and lengths vary. A **recurrent neural network** reads one element at a time and carries a **hidden state** $\mathbf h_t$ that summarises everything it has seen so far:
+
+$$
+\mathbf h_t = \tanh\big(W_h\,\mathbf h_{t-1} + W_x\,\mathbf x_t + \mathbf b\big), \qquad \hat{\mathbf y}_t = W_y\,\mathbf h_t
+$$
+
+The **same** weights are applied at every time step. That is weight sharing across time, just as a convolution shares its weights across space. Elman's 1990 paper *Finding Structure in Time* showed that such networks discover grammatical categories from raw word sequences.
+
+## Training: back-propagation through time
+
+"Unroll" the recurrence into a deep feed-forward network with one layer per time step and apply ordinary back-propagation. The gradient that reaches step $t$ from a loss at the final step $T$ is a **product of Jacobians**:
+
+$$
+\frac{\partial \mathbf h_T}{\partial \mathbf h_t} = \prod_{k=t+1}^{T} \operatorname{diag}\big(1 - \mathbf h_k^2\big)\,W_h
+$$
+
+<Callout type="math" title="Vanishing and exploding gradients">
+
+Each factor multiplies the gradient's norm by at most $\|W_h\|$, since $|\tanh'| \le 1$. So
+
+$$
+\Big\|\frac{\partial \mathbf h_T}{\partial \mathbf h_t}\Big\| \le \|W_h\|^{T-t}
+$$
+
+If $\|W_h\| \lt 1$ the gradient shrinks exponentially with distance (**vanishing**), and the network cannot learn long-range dependencies. If the effective gain exceeds 1, it can grow exponentially (**exploding**), and training becomes unstable. Bengio, Simard and Frasconi analysed this in 1994.
+
+</Callout>
+
+<RNNGradientViz />
+
+### Things to try
+
+1. With the **linear** activation, the measured gradient follows the prediction $\text{gain}^{T-t}$ exactly (the two lines coincide). The recurrent matrix is orthogonal times the gain, so every singular value equals the gain.
+2. Set gain 0.8 and length 60: the gradient from 60 steps back is about $0.8^{60} \approx 10^{-6}$.
+3. Set gain 1.2 with **linear**: it explodes. Switch to **tanh**: saturation caps the growth, and the gradients vanish instead. Larger inputs saturate tanh even more.
+4. Watch the hidden-state heatmap. With a large gain and tanh, units stick near ±1, which is exactly where tanh′ ≈ 0.
+
+## Remedies
+
+- **Gradient clipping** (Pascanu et al., 2013): rescale the gradient when its norm exceeds a threshold. This cures explosions.
+- **Orthogonal initialisation** of $W_h$ keeps the gain near 1 at the start of training.
+- **Gated architectures** (the LSTM and GRU) change the recurrence itself so information can flow unchanged over many steps. That is the next lesson.
+- **Attention** removes the long chain of multiplications entirely. That is the lesson after next.
+
+## Summary
+
+- An RNN applies the same transition at every time step and carries information forward in its hidden state.
+- Back-propagation through time multiplies one Jacobian per step, so gradients scale roughly like $\|W_h\|^{T-t}$.
+- Vanishing gradients stop simple RNNs from learning long-range dependencies. Clipping fixes explosions but not vanishing.
+
+**Challenge:** a numerical check on how quickly gradients vanish.

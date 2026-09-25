@@ -39,9 +39,11 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
-    // TensorFlow.js (~1.4 MB) and three.js (~0.7 MB) are each isolated in
-    // lazily-loaded chunks; only pages that need them download them.
-    chunkSizeWarningLimit: 1600,
+    // TensorFlow.js (~1.9 MB minified, ~0.3 MB gzipped) is one indivisible
+    // library; it and three.js (~0.7 MB) live in lazily-loaded chunks, so only
+    // pages that need them download them. The tensor-sandbox worker bundles
+    // its own copy of TF.js because workers cannot share the page's chunks.
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks(id) {
