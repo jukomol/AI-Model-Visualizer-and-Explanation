@@ -122,3 +122,8 @@ export function toRgba(
 /** Marker shapes that pair with categorical slots so class identity is never colour-only. */
 export const CLASS_SHAPES = ['circle', 'square', 'triangle', 'diamond'] as const
 export type ClassShape = (typeof CLASS_SHAPES)[number]
+
+/** Text colour (near-black or white) that stays legible on a filled background. */
+export function inkOn([r, g, b]: RGB): string {
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 140 ? '#0b0b0b' : '#ffffff'
+}

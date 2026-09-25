@@ -11,7 +11,7 @@ export interface Series {
 }
 
 export interface LineChartProps {
-  data: ReadonlyArray<Record<string, number | null | undefined>>
+  data: ReadonlyArray<object>
   xKey: string
   series: readonly Series[]
   height?: number
@@ -30,10 +30,13 @@ export function LineChart({ data, xKey, series, height = 200, xLabel, yLabel, lo
   return (
     <div role="img" aria-label={ariaLabel} style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <RLineChart data={data as Record<string, number>[]} margin={{ top: 8, right: 12, bottom: xLabel ? 18 : 4, left: 0 }}>
+        <RLineChart data={data as object[]} margin={{ top: 8, right: 12, bottom: xLabel ? 18 : 4, left: 0 }}>
           <CartesianGrid stroke={ink.grid} strokeWidth={1} vertical={false} />
           <XAxis
             dataKey={xKey}
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            allowDecimals={false}
             stroke={ink.axis}
             tick={{ fill: ink.text, fontSize: 11 }}
             tickLine={false}
@@ -61,7 +64,7 @@ export function LineChart({ data, xKey, series, height = 200, xLabel, yLabel, lo
             formatter={(v: number, name: string) => [fmt(Number(v), 4), name]}
             labelFormatter={(l) => (xLabel ? `${xLabel} ${l}` : String(l))}
           />
-          {series.length > 1 && <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, color: ink.text }} />}
+          {series.length > 1 && <Legend verticalAlign="top" align="right" iconType="plainline" height={24} wrapperStyle={{ fontSize: 12, color: ink.text }} />}
           {reference && <ReferenceLine y={reference.y} stroke={ink.text} strokeWidth={1} label={{ value: reference.label, fill: ink.text, fontSize: 11, position: 'insideTopRight' }} />}
           {series.map((s, i) => (
             <Line

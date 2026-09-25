@@ -61,3 +61,15 @@ export function trainPerceptron(
   }
   return { updates, final: state, convergedAtEpoch: null, mistakesPerEpoch }
 }
+
+/**
+ * Endpoints of the line w·x + b = offset clipped to the square [−1, 1]²
+ * (parameterised along whichever axis the line is less steep in).
+ */
+export function boundarySegment(s: { w: readonly [number, number] | number[]; b: number }, offset = 0): [number, number, number, number] | null {
+  const [w1, w2] = s.w
+  const c = s.b - offset
+  if (Math.abs(w1) < 1e-12 && Math.abs(w2) < 1e-12) return null
+  if (Math.abs(w2) > Math.abs(w1)) return [-1, (-c + w1) / w2, 1, (-c - w1) / w2]
+  return [(-c + w2) / w1, -1, (-c - w2) / w1, 1]
+}

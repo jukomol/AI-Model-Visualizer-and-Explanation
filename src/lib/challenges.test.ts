@@ -47,12 +47,16 @@ describe('metric challenges are achievable', () => {
   })
 
   it('diffusion: enough DDIM steps put samples on the data', () => {
-    const data: Vec2[] = generatePreset('moons', createRng(1)).map((p) => [p.x, p.y])
-    const s = makeSchedule('cosine', 1000)
-    const good = ddimSample(data, s, 50, 40, createRng(3)).map((t) => t[t.length - 1])
-    const bad = ddimSample(data, s, 1, 40, createRng(3)).map((t) => t[t.length - 1])
-    expect(checkMetric(challenge('diffusion'), meanNearestDistance(good, data))).toBe(true)
-    expect(checkMetric(challenge('diffusion'), meanNearestDistance(bad, data))).toBe(false)
+    // Mirrors DiffusionViz: data scaled ×1.6, error reported in the original units.
+    const data: Vec2[] = generatePreset('moons', createRng(1), 0.03).map((p) => [p.x * 1.6, p.y * 1.6])
+    const err = (kind: 'linear' | 'cosine', steps: number) =>
+      meanNearestDistance(ddimSample(data, makeSchedule(kind, 1000), steps, 120, createRng(1)).map((t) => t[t.length - 1]), data) / 1.6
+    // The visualizer's defaults (linear schedule, 5 steps) do not pass…
+    expect(checkMetric(challenge('diffusion'), err('linear', 5))).toBe(false)
+    expect(checkMetric(challenge('diffusion'), err('cosine', 1))).toBe(false)
+    // …but more steps, or the cosine schedule, do.
+    expect(checkMetric(challenge('diffusion'), err('linear', 50))).toBe(true)
+    expect(checkMetric(challenge('diffusion'), err('cosine', 10))).toBe(true)
   })
 
   it('quantisation: 4-bit SQNR target needs a clipped calibration range', () => {

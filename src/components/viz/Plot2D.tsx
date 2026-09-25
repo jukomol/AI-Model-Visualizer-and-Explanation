@@ -87,11 +87,12 @@ export function Plot2D({
   }, [scales, backgroundKey])
 
   const ticks = useMemo(() => {
-    const step = gridStep ?? niceStep(domain.xMax - domain.xMin)
+    const xStep = gridStep ?? niceStep(domain.xMax - domain.xMin)
+    const yStep = gridStep ?? niceStep(domain.yMax - domain.yMin)
     const xs: number[] = []
     const ys: number[] = []
-    for (let v = Math.ceil(domain.xMin / step) * step; v <= domain.xMax + 1e-9; v += step) xs.push(Number(v.toFixed(6)))
-    for (let v = Math.ceil(domain.yMin / step) * step; v <= domain.yMax + 1e-9; v += step) ys.push(Number(v.toFixed(6)))
+    for (let v = Math.ceil(domain.xMin / xStep) * xStep; v <= domain.xMax + 1e-9; v += xStep) xs.push(Number(v.toFixed(6)))
+    for (let v = Math.ceil(domain.yMin / yStep) * yStep; v <= domain.yMax + 1e-9; v += yStep) ys.push(Number(v.toFixed(6)))
     return { xs, ys }
   }, [domain, gridStep])
 
@@ -111,7 +112,7 @@ export function Plot2D({
             aria-label={ariaLabel}
             width={scales.width}
             height={scales.height}
-            className="absolute inset-0 touch-none overflow-visible rounded-lg"
+            className="absolute inset-0 touch-none overflow-hidden rounded-lg"
             onPointerDown={onPointerDown ? (e) => onPointerDown(toData(e), e) : undefined}
             onPointerMove={onPointerMove ? (e) => onPointerMove(toData(e), e) : undefined}
             onPointerUp={onPointerUp}
