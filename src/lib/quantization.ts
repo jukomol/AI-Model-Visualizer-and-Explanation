@@ -91,12 +91,12 @@ export function memoryBytes(n: number, bits: number): number {
  * A weight tensor with the heavy-tailed shape typical of trained layers:
  * Laplace-distributed bulk plus a handful of large-magnitude outliers.
  */
-export function sampleLayerWeights(n: number, rng: Rng, scale = 0.05, outlierFraction = 0.002): Float32Array {
+export function sampleLayerWeights(n: number, rng: Rng, scale = 0.05, outlierFraction = 0.001): Float32Array {
   const out = new Float32Array(n)
   for (let i = 0; i < n; i++) {
     const u = rng.next() - 0.5
     out[i] = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u))
-    if (rng.next() < outlierFraction) out[i] = (rng.next() < 0.5 ? -1 : 1) * rng.uniform(0.6, 1.0)
+    if (rng.next() < outlierFraction) out[i] = (rng.next() < 0.5 ? -1 : 1) * rng.uniform(0.3, 0.5)
   }
   return out
 }

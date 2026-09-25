@@ -1,0 +1,1287 @@
+{
+  "version": 1,
+  "tracks": [
+    {
+      "id": "foundations",
+      "title": "Foundations",
+      "description": "Statistical learning from first principles: fitting lines, descending gradients, separating classes and finding structure in unlabelled data."
+    },
+    {
+      "id": "cv",
+      "title": "Deep Learning & Computer Vision",
+      "description": "From back-propagation to convolutional networks you can pull apart layer by layer, explain with Grad-CAM, and deploy for detection."
+    },
+    {
+      "id": "modern",
+      "title": "Sequences & Modern Architectures",
+      "description": "Recurrent memory, attention, generative diffusion and the engineering that squeezes models onto edge devices."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "linear-regression",
+      "track": "foundations",
+      "title": "Linear Regression",
+      "summary": "Fit a straight line by minimising squared error — analytically with least squares, and iteratively with gradient descent.",
+      "prerequisites": [],
+      "estimatedMinutes": 15,
+      "objectives": [
+        "Derive the least-squares solution",
+        "Relate the learning rate to the curvature of the loss",
+        "See why feature scaling speeds up gradient descent"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Model",
+          "tex": "\\hat y = w x + b"
+        },
+        {
+          "label": "Mean squared error",
+          "tex": "L(w,b) = \\frac{1}{n}\\sum_{i=1}^{n} (w x_i + b - y_i)^2"
+        },
+        {
+          "label": "Closed-form slope",
+          "tex": "w^\\star = \\frac{\\sum_i (x_i-\\bar x)(y_i-\\bar y)}{\\sum_i (x_i-\\bar x)^2},\\quad b^\\star = \\bar y - w^\\star \\bar x"
+        },
+        {
+          "label": "Gradient step",
+          "tex": "w \\leftarrow w - \\eta\\,\\frac{2}{n}\\sum_i (w x_i + b - y_i)\\,x_i"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "A.-M. Legendre",
+          "year": 1805,
+          "title": "Nouvelles méthodes pour la détermination des orbites des comètes",
+          "venue": "Firmin Didot, Paris",
+          "note": "First published description of least squares."
+        },
+        {
+          "authors": "F. Galton",
+          "year": 1886,
+          "title": "Regression towards mediocrity in hereditary stature",
+          "venue": "Journal of the Anthropological Institute, 15, 246–263",
+          "url": "https://doi.org/10.2307/2841583"
+        },
+        {
+          "authors": "F. J. Anscombe",
+          "year": 1973,
+          "title": "Graphs in Statistical Analysis",
+          "venue": "The American Statistician, 27(1), 17–21",
+          "url": "https://doi.org/10.1080/00031305.1973.10478966"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "With gradient descent, drive the mean squared error on Anscombe's set I down to 1.30 or less (the least-squares optimum is 1.251). Tune the learning rate and number of epochs — or find the trick that makes it easy.",
+        "metric": "linreg-mse-anscombe1",
+        "comparator": "lte",
+        "threshold": 1.3,
+        "unit": "MSE"
+      },
+      "visualizers": [
+        "RegressionPlayground"
+      ],
+      "route": "/learn/linear-regression"
+    },
+    {
+      "id": "gradient-descent",
+      "track": "foundations",
+      "title": "Gradient Descent & Optimisers",
+      "summary": "Walk downhill on a loss surface. Compare SGD, momentum, Nesterov, RMSProp and Adam on bowls, valleys and saddles.",
+      "prerequisites": [
+        "linear-regression"
+      ],
+      "estimatedMinutes": 20,
+      "objectives": [
+        "Explain the stability limit η < 2/λ_max",
+        "Describe how momentum damps oscillation",
+        "Explain Adam's per-parameter step sizes and bias correction"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Gradient descent",
+          "tex": "\\theta_{t+1} = \\theta_t - \\eta\\,\\nabla L(\\theta_t)"
+        },
+        {
+          "label": "Momentum",
+          "tex": "v_{t+1} = \\mu v_t + \\nabla L(\\theta_t),\\quad \\theta_{t+1} = \\theta_t - \\eta v_{t+1}"
+        },
+        {
+          "label": "Adam moments",
+          "tex": "m_t = \\beta_1 m_{t-1} + (1-\\beta_1) g_t,\\quad v_t = \\beta_2 v_{t-1} + (1-\\beta_2) g_t^2"
+        },
+        {
+          "label": "Adam update",
+          "tex": "\\theta_{t} = \\theta_{t-1} - \\eta\\,\\frac{\\hat m_t}{\\sqrt{\\hat v_t}+\\epsilon},\\quad \\hat m_t = \\frac{m_t}{1-\\beta_1^t},\\ \\hat v_t = \\frac{v_t}{1-\\beta_2^t}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "A.-L. Cauchy",
+          "year": 1847,
+          "title": "Méthode générale pour la résolution des systèmes d'équations simultanées",
+          "venue": "Comptes Rendus de l'Académie des Sciences, 25, 536–538"
+        },
+        {
+          "authors": "H. Robbins, S. Monro",
+          "year": 1951,
+          "title": "A Stochastic Approximation Method",
+          "venue": "Annals of Mathematical Statistics, 22(3), 400–407",
+          "url": "https://doi.org/10.1214/aoms/1177729586"
+        },
+        {
+          "authors": "B. T. Polyak",
+          "year": 1964,
+          "title": "Some methods of speeding up the convergence of iteration methods",
+          "venue": "USSR Computational Mathematics and Mathematical Physics, 4(5), 1–17",
+          "url": "https://doi.org/10.1016/0041-5553(64)90137-5"
+        },
+        {
+          "authors": "D. P. Kingma, J. Ba",
+          "year": 2014,
+          "title": "Adam: A Method for Stochastic Optimization",
+          "venue": "ICLR 2015",
+          "url": "https://arxiv.org/abs/1412.6980"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "On the Rosenbrock valley, pick an optimiser and hyper-parameters that reach a loss of 0.01 or lower within the 1,000-step budget.",
+        "metric": "gd-rosenbrock-loss",
+        "comparator": "lte",
+        "threshold": 0.01,
+        "unit": "loss"
+      },
+      "visualizers": [
+        "LossLandscape3D"
+      ],
+      "route": "/learn/gradient-descent"
+    },
+    {
+      "id": "logistic-regression",
+      "track": "foundations",
+      "title": "Logistic Regression",
+      "summary": "Turn a linear score into a probability with the sigmoid and train it with cross-entropy — the simplest neural network.",
+      "prerequisites": [
+        "gradient-descent"
+      ],
+      "estimatedMinutes": 15,
+      "objectives": [
+        "Interpret the sigmoid output as a probability",
+        "Derive the cross-entropy gradient (p − y)x",
+        "Recognise that the decision boundary is always a line"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Sigmoid",
+          "tex": "\\sigma(z) = \\frac{1}{1+e^{-z}},\\quad p = \\sigma(\\mathbf w^\\top \\mathbf x + b)"
+        },
+        {
+          "label": "Binary cross-entropy",
+          "tex": "L = -\\frac{1}{n}\\sum_i \\big[y_i \\log p_i + (1-y_i)\\log(1-p_i)\\big]"
+        },
+        {
+          "label": "Gradient",
+          "tex": "\\nabla_{\\mathbf w} L = \\frac{1}{n}\\sum_i (p_i - y_i)\\,\\mathbf x_i"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "D. R. Cox",
+          "year": 1958,
+          "title": "The Regression Analysis of Binary Sequences",
+          "venue": "Journal of the Royal Statistical Society B, 20(2), 215–242",
+          "url": "https://doi.org/10.1111/j.2517-6161.1958.tb00292.x"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Train logistic regression on the “Linearly separable” preset until the training cross-entropy is 0.15 or lower.",
+        "metric": "logistic-loss-linear",
+        "comparator": "lte",
+        "threshold": 0.15,
+        "unit": "cross-entropy"
+      },
+      "visualizers": [
+        "DatasetPainter"
+      ],
+      "route": "/learn/logistic-regression"
+    },
+    {
+      "id": "perceptron",
+      "track": "foundations",
+      "title": "The Perceptron",
+      "summary": "Rosenblatt's mistake-driven learning rule, its convergence guarantee for separable data — and its famous failure on XOR.",
+      "prerequisites": [
+        "linear-regression"
+      ],
+      "estimatedMinutes": 12,
+      "objectives": [
+        "Apply the update w ← w + ηyx",
+        "State the perceptron convergence theorem",
+        "Explain why XOR cannot be learned by a single linear unit"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Prediction",
+          "tex": "\\hat y = \\operatorname{sign}(\\mathbf w^\\top \\mathbf x + b)"
+        },
+        {
+          "label": "Update on a mistake",
+          "tex": "\\mathbf w \\leftarrow \\mathbf w + \\eta\\, y\\, \\mathbf x,\\quad b \\leftarrow b + \\eta\\, y"
+        },
+        {
+          "label": "Novikoff bound",
+          "tex": "\\#\\text{mistakes} \\le \\left(\\frac{R}{\\gamma}\\right)^2"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "F. Rosenblatt",
+          "year": 1958,
+          "title": "The perceptron: A probabilistic model for information storage and organization in the brain",
+          "venue": "Psychological Review, 65(6), 386–408",
+          "url": "https://doi.org/10.1037/h0042519"
+        },
+        {
+          "authors": "A. B. J. Novikoff",
+          "year": 1962,
+          "title": "On convergence proofs on perceptrons",
+          "venue": "Symposium on the Mathematical Theory of Automata, 12, 615–622"
+        },
+        {
+          "authors": "M. Minsky, S. Papert",
+          "year": 1969,
+          "title": "Perceptrons: An Introduction to Computational Geometry",
+          "venue": "MIT Press"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Run the perceptron on separable data until it completes a full epoch with zero mistakes.",
+        "metric": "perceptron-errors",
+        "comparator": "lte",
+        "threshold": 0,
+        "unit": "mistakes"
+      },
+      "visualizers": [
+        "PerceptronViz"
+      ],
+      "route": "/learn/perceptron"
+    },
+    {
+      "id": "svm",
+      "track": "foundations",
+      "title": "Support Vector Machines",
+      "summary": "Among all separating lines, choose the one with the widest margin. Only the support vectors matter.",
+      "prerequisites": [
+        "perceptron",
+        "gradient-descent"
+      ],
+      "estimatedMinutes": 18,
+      "objectives": [
+        "Define the geometric margin 2/‖w‖",
+        "Identify support vectors from the dual variables α",
+        "Explain the soft-margin trade-off controlled by C"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Soft-margin primal",
+          "tex": "\\min_{\\mathbf w,b}\\ \\tfrac12\\|\\mathbf w\\|^2 + C\\sum_i \\max\\big(0,\\,1 - y_i(\\mathbf w^\\top\\mathbf x_i + b)\\big)"
+        },
+        {
+          "label": "Dual",
+          "tex": "\\max_{\\alpha}\\ \\sum_i \\alpha_i - \\tfrac12\\sum_{i,j}\\alpha_i\\alpha_j y_i y_j\\,\\mathbf x_i^\\top\\mathbf x_j,\\quad 0\\le\\alpha_i\\le C,\\ \\sum_i\\alpha_i y_i = 0"
+        },
+        {
+          "label": "Margin width",
+          "tex": "\\text{margin} = \\frac{2}{\\|\\mathbf w\\|},\\qquad \\mathbf w = \\sum_i \\alpha_i y_i \\mathbf x_i"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "C. Cortes, V. Vapnik",
+          "year": 1995,
+          "title": "Support-vector networks",
+          "venue": "Machine Learning, 20, 273–297",
+          "url": "https://doi.org/10.1007/BF00994018"
+        },
+        {
+          "authors": "J. C. Platt",
+          "year": 1998,
+          "title": "Sequential Minimal Optimization: A Fast Algorithm for Training Support Vector Machines",
+          "venue": "Microsoft Research Technical Report MSR-TR-98-14",
+          "url": "https://www.microsoft.com/en-us/research/publication/sequential-minimal-optimization-a-fast-algorithm-for-training-support-vector-machines/"
+        }
+      ],
+      "challenge": {
+        "type": "quiz",
+        "prompt": "You delete a training point that lies far outside the margin on the correct side. What happens to the trained SVM?",
+        "options": [
+          "The boundary shifts towards where the point was",
+          "Nothing — its dual variable α is zero, so it does not contribute to w",
+          "The margin always becomes wider",
+          "C must be re-tuned"
+        ],
+        "answerIndex": 1,
+        "explanation": "Only support vectors (α > 0) appear in w = Σ αᵢyᵢxᵢ. A point strictly outside the margin has α = 0, so removing it leaves the solution unchanged."
+      },
+      "visualizers": [
+        "SVMViz"
+      ],
+      "route": "/learn/svm"
+    },
+    {
+      "id": "k-means",
+      "track": "foundations",
+      "title": "K-Means Clustering",
+      "summary": "Unsupervised grouping by alternating assignment and update steps; Voronoi cells, k-means++ seeding and the silhouette score.",
+      "prerequisites": [],
+      "estimatedMinutes": 15,
+      "objectives": [
+        "Execute Lloyd's algorithm by hand",
+        "Relate cluster assignments to Voronoi cells",
+        "Use the silhouette score to choose k"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Objective (inertia)",
+          "tex": "J = \\sum_{i=1}^{n} \\big\\|\\mathbf x_i - \\boldsymbol\\mu_{c_i}\\big\\|^2"
+        },
+        {
+          "label": "Assignment step",
+          "tex": "c_i = \\arg\\min_k \\|\\mathbf x_i - \\boldsymbol\\mu_k\\|^2"
+        },
+        {
+          "label": "Update step",
+          "tex": "\\boldsymbol\\mu_k = \\frac{1}{|S_k|}\\sum_{i\\in S_k}\\mathbf x_i"
+        },
+        {
+          "label": "Silhouette",
+          "tex": "s(i) = \\frac{b(i) - a(i)}{\\max\\{a(i),\\,b(i)\\}}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "S. P. Lloyd",
+          "year": 1982,
+          "title": "Least squares quantization in PCM",
+          "venue": "IEEE Transactions on Information Theory, 28(2), 129–137 (Bell Labs memo, 1957)",
+          "url": "https://doi.org/10.1109/TIT.1982.1056489"
+        },
+        {
+          "authors": "J. MacQueen",
+          "year": 1967,
+          "title": "Some methods for classification and analysis of multivariate observations",
+          "venue": "Proc. 5th Berkeley Symposium on Mathematical Statistics and Probability, 1, 281–297"
+        },
+        {
+          "authors": "D. Arthur, S. Vassilvitskii",
+          "year": 2007,
+          "title": "k-means++: The Advantages of Careful Seeding",
+          "venue": "SODA 2007",
+          "url": "https://dl.acm.org/doi/10.5555/1283383.1283494"
+        },
+        {
+          "authors": "P. J. Rousseeuw",
+          "year": 1987,
+          "title": "Silhouettes: A graphical aid to the interpretation and validation of cluster analysis",
+          "venue": "Journal of Computational and Applied Mathematics, 20, 53–65",
+          "url": "https://doi.org/10.1016/0377-0427(87)90125-7"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "On the “Four clusters” preset, choose k and an initialisation that reach a silhouette score of 0.60 or higher.",
+        "metric": "kmeans-silhouette-blobs",
+        "comparator": "gte",
+        "threshold": 0.6,
+        "unit": "silhouette"
+      },
+      "visualizers": [
+        "KMeansViz"
+      ],
+      "route": "/learn/k-means"
+    },
+    {
+      "id": "pca",
+      "track": "foundations",
+      "title": "Principal Component Analysis",
+      "summary": "Find the directions of maximum variance, project onto them, and measure how much information survives.",
+      "prerequisites": [
+        "linear-regression"
+      ],
+      "estimatedMinutes": 15,
+      "objectives": [
+        "Compute principal axes from the covariance matrix",
+        "Interpret explained-variance ratios",
+        "Contrast PCA with regression (orthogonal vs vertical residuals)"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Covariance",
+          "tex": "\\Sigma = \\frac{1}{n-1}\\sum_i (\\mathbf x_i - \\bar{\\mathbf x})(\\mathbf x_i - \\bar{\\mathbf x})^\\top"
+        },
+        {
+          "label": "Principal axes",
+          "tex": "\\Sigma\\,\\mathbf u_k = \\lambda_k \\mathbf u_k,\\quad \\lambda_1 \\ge \\lambda_2 \\ge \\dots"
+        },
+        {
+          "label": "Explained variance",
+          "tex": "\\text{EVR}_k = \\frac{\\lambda_k}{\\sum_j \\lambda_j}"
+        },
+        {
+          "label": "Projection",
+          "tex": "z_{ik} = \\mathbf u_k^\\top(\\mathbf x_i - \\bar{\\mathbf x})"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "K. Pearson",
+          "year": 1901,
+          "title": "On lines and planes of closest fit to systems of points in space",
+          "venue": "Philosophical Magazine, 2(11), 559–572",
+          "url": "https://doi.org/10.1080/14786440109462720"
+        },
+        {
+          "authors": "H. Hotelling",
+          "year": 1933,
+          "title": "Analysis of a complex of statistical variables into principal components",
+          "venue": "Journal of Educational Psychology, 24(6), 417–441",
+          "url": "https://doi.org/10.1037/h0071325"
+        },
+        {
+          "authors": "R. A. Fisher",
+          "year": 1936,
+          "title": "The use of multiple measurements in taxonomic problems",
+          "venue": "Annals of Eugenics, 7(2), 179–188",
+          "url": "https://doi.org/10.1111/j.1469-1809.1936.tb02137.x"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Rotate the projection axis by hand until it captures at least 99% of the variance that the first principal component captures.",
+        "metric": "pca-variance-ratio",
+        "comparator": "gte",
+        "threshold": 0.99,
+        "unit": "of PC1 variance"
+      },
+      "visualizers": [
+        "PCAViz"
+      ],
+      "route": "/learn/pca"
+    },
+    {
+      "id": "backpropagation",
+      "track": "cv",
+      "title": "Back-propagation",
+      "summary": "The chain rule, organised: push values forward, push error signals backward, and update every weight at once.",
+      "prerequisites": [
+        "logistic-regression",
+        "perceptron"
+      ],
+      "estimatedMinutes": 20,
+      "objectives": [
+        "Trace forward values and backward deltas through a small network",
+        "Verify gradients against finite differences",
+        "Recognise local minima when training on XOR"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Forward pass",
+          "tex": "\\mathbf z^{(l)} = W^{(l)}\\mathbf a^{(l-1)} + \\mathbf b^{(l)},\\quad \\mathbf a^{(l)} = \\phi(\\mathbf z^{(l)})"
+        },
+        {
+          "label": "Output error (sigmoid + BCE)",
+          "tex": "\\delta^{(L)} = \\hat y - y"
+        },
+        {
+          "label": "Backward recursion",
+          "tex": "\\delta^{(l)} = \\big(W^{(l+1)\\top}\\delta^{(l+1)}\\big)\\odot \\phi'(\\mathbf z^{(l)})"
+        },
+        {
+          "label": "Weight gradient",
+          "tex": "\\frac{\\partial L}{\\partial W^{(l)}} = \\delta^{(l)}\\,\\mathbf a^{(l-1)\\top}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "D. E. Rumelhart, G. E. Hinton, R. J. Williams",
+          "year": 1986,
+          "title": "Learning representations by back-propagating errors",
+          "venue": "Nature, 323, 533–536",
+          "url": "https://doi.org/10.1038/323533a0"
+        },
+        {
+          "authors": "S. Linnainmaa",
+          "year": 1970,
+          "title": "The representation of the cumulative rounding error of an algorithm as a Taylor expansion of the local rounding errors",
+          "venue": "Master's thesis, University of Helsinki",
+          "note": "Reverse-mode automatic differentiation."
+        },
+        {
+          "authors": "X. Glorot, Y. Bengio",
+          "year": 2010,
+          "title": "Understanding the difficulty of training deep feedforward neural networks",
+          "venue": "AISTATS 2010",
+          "url": "https://proceedings.mlr.press/v9/glorot10a.html"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Train the 2-hidden-unit network on XOR until the average loss is 0.05 or lower. If it plateaus, think about why — and what you could change.",
+        "metric": "backprop-xor-loss",
+        "comparator": "lte",
+        "threshold": 0.05,
+        "unit": "loss"
+      },
+      "visualizers": [
+        "BackpropViz"
+      ],
+      "route": "/learn/backpropagation"
+    },
+    {
+      "id": "mlp",
+      "track": "cv",
+      "title": "Multilayer Perceptrons",
+      "summary": "Stack non-linear layers to bend decision boundaries around spirals and circles — the universal approximation theorem in action.",
+      "prerequisites": [
+        "backpropagation"
+      ],
+      "estimatedMinutes": 15,
+      "objectives": [
+        "Relate depth and width to boundary complexity",
+        "Compare activation functions",
+        "Diagnose under- and over-fitting visually"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Two-layer network",
+          "tex": "f(\\mathbf x) = W_2\\,\\phi(W_1\\mathbf x + \\mathbf b_1) + \\mathbf b_2"
+        },
+        {
+          "label": "ReLU",
+          "tex": "\\operatorname{ReLU}(z) = \\max(0, z)"
+        },
+        {
+          "label": "Softmax cross-entropy",
+          "tex": "L = -\\sum_k y_k \\log \\frac{e^{z_k}}{\\sum_j e^{z_j}}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "G. Cybenko",
+          "year": 1989,
+          "title": "Approximation by superpositions of a sigmoidal function",
+          "venue": "Mathematics of Control, Signals and Systems, 2, 303–314",
+          "url": "https://doi.org/10.1007/BF02551274"
+        },
+        {
+          "authors": "K. Hornik, M. Stinchcombe, H. White",
+          "year": 1989,
+          "title": "Multilayer feedforward networks are universal approximators",
+          "venue": "Neural Networks, 2(5), 359–366",
+          "url": "https://doi.org/10.1016/0893-6080(89)90020-8"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Train a multilayer perceptron on the “Two spirals” preset to a training accuracy of 95% or higher.",
+        "metric": "mlp-accuracy-spiral",
+        "comparator": "gte",
+        "threshold": 0.95,
+        "unit": "accuracy"
+      },
+      "visualizers": [
+        "DatasetPainter"
+      ],
+      "route": "/learn/mlp"
+    },
+    {
+      "id": "cnn-convolutions",
+      "track": "cv",
+      "title": "Convolutions",
+      "summary": "Slide a small kernel across an image, multiply and sum: local connectivity and weight sharing, one dot product at a time.",
+      "prerequisites": [
+        "mlp"
+      ],
+      "estimatedMinutes": 15,
+      "objectives": [
+        "Compute a convolution output by hand",
+        "Predict output sizes from kernel, stride and padding",
+        "Recognise classic edge and blur kernels"
+      ],
+      "keyFormulas": [
+        {
+          "label": "2-D convolution (cross-correlation)",
+          "tex": "Y_{i,j} = \\sum_{u=0}^{k-1}\\sum_{v=0}^{k-1} K_{u,v}\\,X_{s i + u - p,\\ s j + v - p}"
+        },
+        {
+          "label": "Output size",
+          "tex": "n_{\\text{out}} = \\left\\lfloor\\frac{n + 2p - k}{s}\\right\\rfloor + 1"
+        },
+        {
+          "label": "Parameters of a conv layer",
+          "tex": "(k_h k_w C_{\\text{in}} + 1)\\,C_{\\text{out}}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "K. Fukushima",
+          "year": 1980,
+          "title": "Neocognitron: A self-organizing neural network model for a mechanism of pattern recognition unaffected by shift in position",
+          "venue": "Biological Cybernetics, 36, 193–202",
+          "url": "https://doi.org/10.1007/BF00344251"
+        },
+        {
+          "authors": "Y. LeCun, B. Boser, J. S. Denker, et al.",
+          "year": 1989,
+          "title": "Backpropagation Applied to Handwritten Zip Code Recognition",
+          "venue": "Neural Computation, 1(4), 541–551",
+          "url": "https://doi.org/10.1162/neco.1989.1.4.541"
+        }
+      ],
+      "challenge": {
+        "type": "quiz",
+        "prompt": "A 3×3 kernel slides over a 7×7 image with stride 1 and no padding. What is the output size?",
+        "options": [
+          "7×7",
+          "6×6",
+          "5×5",
+          "3×3"
+        ],
+        "answerIndex": 2,
+        "explanation": "⌊(7 + 0 − 3)/1⌋ + 1 = 5, so the output is 5×5. Padding of 1 (“same”) would keep it 7×7."
+      },
+      "visualizers": [
+        "CNNFilterViewer"
+      ],
+      "route": "/learn/cnn-convolutions"
+    },
+    {
+      "id": "pooling",
+      "track": "cv",
+      "title": "Pooling & Downsampling",
+      "summary": "Summarise neighbourhoods with max or average pooling to shrink feature maps and gain a little translation invariance.",
+      "prerequisites": [
+        "cnn-convolutions"
+      ],
+      "estimatedMinutes": 10,
+      "objectives": [
+        "Compute max- and average-pooled outputs",
+        "Explain where gradients flow through a max-pool",
+        "Contrast pooling with strided convolution"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Max pooling",
+          "tex": "Y_{i,j,c} = \\max_{0\\le u,v<P} X_{s i+u,\\ s j+v,\\ c}"
+        },
+        {
+          "label": "Average pooling",
+          "tex": "Y_{i,j,c} = \\frac{1}{P^2}\\sum_{u,v} X_{s i+u,\\ s j+v,\\ c}"
+        },
+        {
+          "label": "Max-pool gradient",
+          "tex": "\\frac{\\partial Y_{i,j}}{\\partial X_{m,n}} = \\mathbb 1\\big[(m,n) = \\arg\\max\\big]"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "Y. LeCun, L. Bottou, Y. Bengio, P. Haffner",
+          "year": 1998,
+          "title": "Gradient-Based Learning Applied to Document Recognition",
+          "venue": "Proceedings of the IEEE, 86(11), 2278–2324",
+          "url": "https://doi.org/10.1109/5.726791"
+        },
+        {
+          "authors": "D. Scherer, A. Müller, S. Behnke",
+          "year": 2010,
+          "title": "Evaluation of Pooling Operations in Convolutional Architectures for Object Recognition",
+          "venue": "ICANN 2010",
+          "url": "https://doi.org/10.1007/978-3-642-15825-4_10"
+        },
+        {
+          "authors": "J. T. Springenberg, A. Dosovitskiy, T. Brox, M. Riedmiller",
+          "year": 2014,
+          "title": "Striving for Simplicity: The All Convolutional Net",
+          "venue": "ICLR 2015 workshop",
+          "url": "https://arxiv.org/abs/1412.6806"
+        }
+      ],
+      "challenge": {
+        "type": "quiz",
+        "prompt": "A feature map of shape [26, 26, 8] passes through 2×2 max pooling with stride 2. What is the output shape?",
+        "options": [
+          "[13, 13, 8]",
+          "[13, 13, 4]",
+          "[24, 24, 8]",
+          "[26, 26, 2]"
+        ],
+        "answerIndex": 0,
+        "explanation": "Pooling acts on each channel independently: ⌊(26 − 2)/2⌋ + 1 = 13 per spatial axis, channels unchanged."
+      },
+      "visualizers": [
+        "PoolingViz"
+      ],
+      "route": "/learn/pooling"
+    },
+    {
+      "id": "exploded-networks",
+      "track": "cv",
+      "title": "Anatomy of a CNN (Exploded View)",
+      "summary": "Pull a real, trainable convolutional network apart in 3-D. Inspect every tensor shape, kernel and live feature map.",
+      "prerequisites": [
+        "pooling"
+      ],
+      "estimatedMinutes": 25,
+      "objectives": [
+        "Trace tensor shapes through an entire CNN",
+        "Count parameters layer by layer",
+        "Relate learned kernels to the feature maps they produce",
+        "Train a network in the browser and read its learning curves"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Layer composition",
+          "tex": "f(\\mathbf x) = \\operatorname{softmax}\\circ\\,\\text{Dense}\\circ\\text{Flatten}\\circ\\text{Pool}\\circ\\text{Conv}\\circ\\cdots(\\mathbf x)"
+        },
+        {
+          "label": "Inverted dropout",
+          "tex": "\\tilde{\\mathbf a} = \\frac{\\mathbf m \\odot \\mathbf a}{1-p},\\quad m_i\\sim\\text{Bernoulli}(1-p)"
+        },
+        {
+          "label": "Softmax",
+          "tex": "p_k = \\frac{e^{z_k}}{\\sum_j e^{z_j}}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "A. Krizhevsky, I. Sutskever, G. E. Hinton",
+          "year": 2012,
+          "title": "ImageNet Classification with Deep Convolutional Neural Networks",
+          "venue": "NeurIPS 2012",
+          "url": "https://papers.nips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html"
+        },
+        {
+          "authors": "M. D. Zeiler, R. Fergus",
+          "year": 2014,
+          "title": "Visualizing and Understanding Convolutional Networks",
+          "venue": "ECCV 2014",
+          "url": "https://arxiv.org/abs/1311.2901"
+        },
+        {
+          "authors": "N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, R. Salakhutdinov",
+          "year": 2014,
+          "title": "Dropout: A Simple Way to Prevent Neural Networks from Overfitting",
+          "venue": "JMLR, 15, 1929–1958",
+          "url": "https://jmlr.org/papers/v15/srivastava14a.html"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Tune the learning rate and number of epochs so TinyShapeNet reaches a validation loss of 0.30 or lower.",
+        "metric": "cnn-val-loss",
+        "comparator": "lte",
+        "threshold": 0.3,
+        "unit": "validation loss"
+      },
+      "visualizers": [
+        "ExplodedNetworkViewer"
+      ],
+      "route": "/learn/exploded-networks"
+    },
+    {
+      "id": "grad-cam",
+      "track": "cv",
+      "title": "Grad-CAM: Visual Explanations",
+      "summary": "Ask a trained CNN where it looked: weight the last convolutional feature maps by their gradients to get a class heatmap.",
+      "prerequisites": [
+        "exploded-networks"
+      ],
+      "estimatedMinutes": 15,
+      "objectives": [
+        "Compute Grad-CAM from activations and gradients",
+        "Explain why the last conv layer is used",
+        "Use saliency to spot a model relying on the wrong evidence"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Channel importance",
+          "tex": "\\alpha_k^c = \\frac{1}{Z}\\sum_{i}\\sum_{j}\\frac{\\partial y^c}{\\partial A^k_{ij}}"
+        },
+        {
+          "label": "Class activation map",
+          "tex": "L^c_{\\text{Grad-CAM}} = \\operatorname{ReLU}\\Big(\\sum_k \\alpha_k^c A^k\\Big)"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "B. Zhou, A. Khosla, A. Lapedriza, A. Oliva, A. Torralba",
+          "year": 2016,
+          "title": "Learning Deep Features for Discriminative Localization",
+          "venue": "CVPR 2016",
+          "url": "https://arxiv.org/abs/1512.04150"
+        },
+        {
+          "authors": "R. R. Selvaraju, M. Cogswell, A. Das, R. Vedantam, D. Parikh, D. Batra",
+          "year": 2017,
+          "title": "Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization",
+          "venue": "ICCV 2017",
+          "url": "https://arxiv.org/abs/1610.02391"
+        },
+        {
+          "authors": "K. Simonyan, A. Vedaldi, A. Zisserman",
+          "year": 2013,
+          "title": "Deep Inside Convolutional Networks: Visualising Image Classification Models and Saliency Maps",
+          "venue": "ICLR 2014 workshop",
+          "url": "https://arxiv.org/abs/1312.6034"
+        }
+      ],
+      "challenge": {
+        "type": "quiz",
+        "prompt": "Why does Grad-CAM usually use the last convolutional layer rather than an earlier one?",
+        "options": [
+          "It has the most parameters",
+          "It is the only layer with non-zero gradients",
+          "It balances high-level semantics with retained spatial layout",
+          "Earlier layers cannot be differentiated"
+        ],
+        "answerIndex": 2,
+        "explanation": "Deep conv layers encode class-specific parts while still being spatial maps; after flattening, spatial information is gone, and earlier layers are less semantic."
+      },
+      "visualizers": [
+        "GradCamViz"
+      ],
+      "route": "/learn/grad-cam"
+    },
+    {
+      "id": "nms",
+      "track": "cv",
+      "title": "Non-Maximum Suppression",
+      "summary": "Detectors fire many overlapping boxes per object. IoU and greedy suppression keep exactly the best one.",
+      "prerequisites": [
+        "cnn-convolutions"
+      ],
+      "estimatedMinutes": 12,
+      "objectives": [
+        "Compute Intersection-over-Union",
+        "Run greedy NMS step by step",
+        "Compare hard NMS with Soft-NMS"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Intersection over Union",
+          "tex": "\\operatorname{IoU}(A,B) = \\frac{|A\\cap B|}{|A\\cup B|} = \\frac{|A\\cap B|}{|A|+|B|-|A\\cap B|}"
+        },
+        {
+          "label": "Greedy NMS",
+          "tex": "M = \\arg\\max_{b\\in\\mathcal B} s_b;\\quad \\mathcal B \\leftarrow \\{b : \\operatorname{IoU}(M,b) \\le \\tau\\}"
+        },
+        {
+          "label": "Soft-NMS (Gaussian)",
+          "tex": "s_b \\leftarrow s_b\\, e^{-\\operatorname{IoU}(M,b)^2/\\sigma}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "P. F. Felzenszwalb, R. B. Girshick, D. McAllester, D. Ramanan",
+          "year": 2010,
+          "title": "Object Detection with Discriminatively Trained Part-Based Models",
+          "venue": "IEEE TPAMI, 32(9), 1627–1645",
+          "url": "https://doi.org/10.1109/TPAMI.2009.167"
+        },
+        {
+          "authors": "R. Girshick, J. Donahue, T. Darrell, J. Malik",
+          "year": 2014,
+          "title": "Rich feature hierarchies for accurate object detection and semantic segmentation",
+          "venue": "CVPR 2014",
+          "url": "https://arxiv.org/abs/1311.2524"
+        },
+        {
+          "authors": "J. Redmon, S. Divvala, R. Girshick, A. Farhadi",
+          "year": 2016,
+          "title": "You Only Look Once: Unified, Real-Time Object Detection",
+          "venue": "CVPR 2016",
+          "url": "https://arxiv.org/abs/1506.02640"
+        },
+        {
+          "authors": "N. Bodla, B. Singh, R. Chellappa, L. S. Davis",
+          "year": 2017,
+          "title": "Soft-NMS — Improving Object Detection With One Line of Code",
+          "venue": "ICCV 2017",
+          "url": "https://arxiv.org/abs/1704.04503"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Tune the IoU and score thresholds so that exactly one box survives per object — no duplicates, no misses.",
+        "metric": "nms-exact",
+        "comparator": "gte",
+        "threshold": 1,
+        "unit": "objects matched"
+      },
+      "visualizers": [
+        "NMSVisualizer"
+      ],
+      "route": "/learn/nms"
+    },
+    {
+      "id": "rnn",
+      "track": "modern",
+      "title": "Recurrent Neural Networks",
+      "summary": "A hidden state carried through time — and the vanishing / exploding gradients that come from multiplying Jacobians.",
+      "prerequisites": [
+        "backpropagation"
+      ],
+      "estimatedMinutes": 15,
+      "objectives": [
+        "Unroll an RNN over time",
+        "Explain back-propagation through time",
+        "Predict when gradients vanish or explode from ‖W_h‖"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Recurrence",
+          "tex": "\\mathbf h_t = \\tanh(W_h \\mathbf h_{t-1} + W_x \\mathbf x_t + \\mathbf b)"
+        },
+        {
+          "label": "Jacobian product",
+          "tex": "\\frac{\\partial \\mathbf h_T}{\\partial \\mathbf h_t} = \\prod_{k=t+1}^{T}\\operatorname{diag}\\big(1-\\mathbf h_k^2\\big)\\,W_h"
+        },
+        {
+          "label": "Gradient bound",
+          "tex": "\\Big\\|\\frac{\\partial \\mathbf h_T}{\\partial \\mathbf h_t}\\Big\\| \\le \\|W_h\\|^{T-t}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "J. L. Elman",
+          "year": 1990,
+          "title": "Finding Structure in Time",
+          "venue": "Cognitive Science, 14(2), 179–211",
+          "url": "https://doi.org/10.1207/s15516709cog1402_1"
+        },
+        {
+          "authors": "Y. Bengio, P. Simard, P. Frasconi",
+          "year": 1994,
+          "title": "Learning long-term dependencies with gradient descent is difficult",
+          "venue": "IEEE Transactions on Neural Networks, 5(2), 157–166",
+          "url": "https://doi.org/10.1109/72.279181"
+        },
+        {
+          "authors": "R. Pascanu, T. Mikolov, Y. Bengio",
+          "year": 2013,
+          "title": "On the difficulty of training recurrent neural networks",
+          "venue": "ICML 2013",
+          "url": "https://arxiv.org/abs/1211.5063"
+        }
+      ],
+      "challenge": {
+        "type": "quiz",
+        "prompt": "A linear RNN has a recurrent matrix whose singular values all equal 0.9. Roughly how large is the gradient reaching 50 steps back, relative to the last step?",
+        "options": [
+          "About 0.9",
+          "About 0.45",
+          "About 0.005",
+          "Exactly 1"
+        ],
+        "answerIndex": 2,
+        "explanation": "The gradient is multiplied by 0.9 at every step: 0.9⁵⁰ ≈ 0.0052. That is the vanishing-gradient problem."
+      },
+      "visualizers": [
+        "RNNGradientViz"
+      ],
+      "route": "/learn/rnn"
+    },
+    {
+      "id": "lstm",
+      "track": "modern",
+      "title": "Long Short-Term Memory",
+      "summary": "Gates control a cell-state conveyor belt so information — and gradient — can survive hundreds of steps.",
+      "prerequisites": [
+        "rnn"
+      ],
+      "estimatedMinutes": 18,
+      "objectives": [
+        "Compute the four LSTM gates",
+        "Explain the additive cell-state update",
+        "Relate the forget gate to long-range gradient flow"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Gates",
+          "tex": "\\mathbf i,\\mathbf f,\\mathbf o = \\sigma(W\\mathbf x_t + U\\mathbf h_{t-1} + \\mathbf b),\\quad \\mathbf g = \\tanh(W_g\\mathbf x_t + U_g\\mathbf h_{t-1} + \\mathbf b_g)"
+        },
+        {
+          "label": "Cell update",
+          "tex": "\\mathbf c_t = \\mathbf f\\odot\\mathbf c_{t-1} + \\mathbf i\\odot\\mathbf g"
+        },
+        {
+          "label": "Hidden output",
+          "tex": "\\mathbf h_t = \\mathbf o\\odot\\tanh(\\mathbf c_t)"
+        },
+        {
+          "label": "Cell-state gradient path",
+          "tex": "\\frac{\\partial \\mathbf c_T}{\\partial \\mathbf c_t} \\approx \\prod_{k=t+1}^{T}\\mathbf f_k"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "S. Hochreiter, J. Schmidhuber",
+          "year": 1997,
+          "title": "Long Short-Term Memory",
+          "venue": "Neural Computation, 9(8), 1735–1780",
+          "url": "https://doi.org/10.1162/neco.1997.9.8.1735"
+        },
+        {
+          "authors": "F. A. Gers, J. Schmidhuber, F. Cummins",
+          "year": 2000,
+          "title": "Learning to Forget: Continual Prediction with LSTM",
+          "venue": "Neural Computation, 12(10), 2451–2471",
+          "url": "https://doi.org/10.1162/089976600300015015"
+        }
+      ],
+      "challenge": {
+        "type": "quiz",
+        "prompt": "Which gate settings let an LSTM carry its cell state unchanged across many steps?",
+        "options": [
+          "Forget gate ≈ 0, input gate ≈ 1",
+          "Forget gate ≈ 1, input gate ≈ 0",
+          "Output gate ≈ 1",
+          "All gates ≈ 0.5"
+        ],
+        "answerIndex": 1,
+        "explanation": "With f ≈ 1 and i ≈ 0 the update is c_t ≈ c_{t−1}: nothing is erased and nothing new is written, and ∂c_T/∂c_t ≈ 1."
+      },
+      "visualizers": [
+        "LSTMCellViz"
+      ],
+      "route": "/learn/lstm"
+    },
+    {
+      "id": "attention-transformers",
+      "track": "modern",
+      "title": "Self-Attention & Transformers",
+      "summary": "Every token queries every other token. Scaled dot-product attention, positional encodings and multi-head patterns.",
+      "prerequisites": [
+        "lstm"
+      ],
+      "estimatedMinutes": 25,
+      "objectives": [
+        "Compute an attention matrix from Q, K and V",
+        "Explain the 1/√d_k scaling",
+        "Understand causal masking and positional encodings"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Scaled dot-product attention",
+          "tex": "\\operatorname{Attention}(Q,K,V) = \\operatorname{softmax}\\!\\Big(\\frac{QK^\\top}{\\sqrt{d_k}} + M\\Big)V"
+        },
+        {
+          "label": "Positional encoding",
+          "tex": "PE_{(p,2i)} = \\sin\\!\\big(p/10000^{2i/d}\\big),\\quad PE_{(p,2i+1)} = \\cos\\!\\big(p/10000^{2i/d}\\big)"
+        },
+        {
+          "label": "Multi-head",
+          "tex": "\\operatorname{MultiHead} = \\operatorname{Concat}(\\text{head}_1,\\dots,\\text{head}_h)W^O"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "D. Bahdanau, K. Cho, Y. Bengio",
+          "year": 2014,
+          "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+          "venue": "ICLR 2015",
+          "url": "https://arxiv.org/abs/1409.0473"
+        },
+        {
+          "authors": "A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, I. Polosukhin",
+          "year": 2017,
+          "title": "Attention Is All You Need",
+          "venue": "NeurIPS 2017",
+          "url": "https://arxiv.org/abs/1706.03762"
+        },
+        {
+          "authors": "C. Olsson, N. Elhage, N. Nanda, et al.",
+          "year": 2022,
+          "title": "In-context Learning and Induction Heads",
+          "venue": "Transformer Circuits Thread",
+          "url": "https://arxiv.org/abs/2209.11895"
+        }
+      ],
+      "challenge": {
+        "type": "quiz",
+        "prompt": "Why are attention scores divided by √d_k?",
+        "options": [
+          "To make the matrix symmetric",
+          "Dot products of random d_k-dimensional vectors have variance ∝ d_k; scaling keeps the softmax from saturating",
+          "To normalise each row to sum to one",
+          "To enforce causality"
+        ],
+        "answerIndex": 1,
+        "explanation": "If q and k have unit-variance components, q·k has variance d_k. Large scores push softmax into regions with vanishing gradients; dividing by √d_k restores unit variance."
+      },
+      "visualizers": [
+        "AttentionHeatmap"
+      ],
+      "route": "/learn/attention-transformers"
+    },
+    {
+      "id": "diffusion",
+      "track": "modern",
+      "title": "Diffusion Models",
+      "summary": "Destroy data with Gaussian noise step by step, then learn to reverse it. Watch samples flow from noise back to data.",
+      "prerequisites": [
+        "backpropagation",
+        "pca"
+      ],
+      "estimatedMinutes": 25,
+      "objectives": [
+        "Sample the forward process in closed form",
+        "Compare linear and cosine noise schedules",
+        "Explain denoising as estimating E[x₀ | xₜ]",
+        "Run deterministic DDIM sampling"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Forward process",
+          "tex": "q(\\mathbf x_t\\mid\\mathbf x_0) = \\mathcal N\\big(\\sqrt{\\bar\\alpha_t}\\,\\mathbf x_0,\\ (1-\\bar\\alpha_t)I\\big),\\quad \\bar\\alpha_t = \\prod_{s\\le t}(1-\\beta_s)"
+        },
+        {
+          "label": "Training objective",
+          "tex": "L = \\mathbb E_{t,\\mathbf x_0,\\boldsymbol\\epsilon}\\big\\|\\boldsymbol\\epsilon - \\boldsymbol\\epsilon_\\theta(\\sqrt{\\bar\\alpha_t}\\mathbf x_0 + \\sqrt{1-\\bar\\alpha_t}\\,\\boldsymbol\\epsilon,\\ t)\\big\\|^2"
+        },
+        {
+          "label": "DDIM step",
+          "tex": "\\mathbf x_{t'} = \\sqrt{\\bar\\alpha_{t'}}\\,\\hat{\\mathbf x}_0 + \\sqrt{1-\\bar\\alpha_{t'}}\\,\\hat{\\boldsymbol\\epsilon}"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "I. Goodfellow, J. Pouget-Abadie, M. Mirza, et al.",
+          "year": 2014,
+          "title": "Generative Adversarial Nets",
+          "venue": "NeurIPS 2014",
+          "url": "https://arxiv.org/abs/1406.2661"
+        },
+        {
+          "authors": "J. Sohl-Dickstein, E. Weiss, N. Maheswaranathan, S. Ganguli",
+          "year": 2015,
+          "title": "Deep Unsupervised Learning using Nonequilibrium Thermodynamics",
+          "venue": "ICML 2015",
+          "url": "https://arxiv.org/abs/1503.03585"
+        },
+        {
+          "authors": "J. Ho, A. Jain, P. Abbeel",
+          "year": 2020,
+          "title": "Denoising Diffusion Probabilistic Models",
+          "venue": "NeurIPS 2020",
+          "url": "https://arxiv.org/abs/2006.11239"
+        },
+        {
+          "authors": "J. Song, C. Meng, S. Ermon",
+          "year": 2020,
+          "title": "Denoising Diffusion Implicit Models",
+          "venue": "ICLR 2021",
+          "url": "https://arxiv.org/abs/2010.02502"
+        },
+        {
+          "authors": "A. Nichol, P. Dhariwal",
+          "year": 2021,
+          "title": "Improved Denoising Diffusion Probabilistic Models",
+          "venue": "ICML 2021",
+          "url": "https://arxiv.org/abs/2102.09672"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Configure the sampler so generated points land on the data: mean distance to the nearest data point of 0.05 or less.",
+        "metric": "diffusion-sample-error",
+        "comparator": "lte",
+        "threshold": 0.05,
+        "unit": "mean distance"
+      },
+      "visualizers": [
+        "DiffusionViz"
+      ],
+      "route": "/learn/diffusion"
+    },
+    {
+      "id": "quantization",
+      "track": "modern",
+      "title": "Edge-AI Quantisation (FP32 → INT8)",
+      "summary": "Map 32-bit floats onto 8-bit (or 4-bit) integers with a scale and zero-point. Calibrate the range, measure the error.",
+      "prerequisites": [
+        "exploded-networks"
+      ],
+      "estimatedMinutes": 15,
+      "objectives": [
+        "Compute scale and zero-point",
+        "Explain why zero must be exactly representable",
+        "Trade clipping error against rounding error during calibration"
+      ],
+      "keyFormulas": [
+        {
+          "label": "Quantise",
+          "tex": "q = \\operatorname{clamp}\\!\\Big(\\Big\\lfloor \\frac{x}{s} \\Big\\rceil + z,\\ q_{\\min},\\ q_{\\max}\\Big)"
+        },
+        {
+          "label": "Dequantise",
+          "tex": "\\hat x = s\\,(q - z)"
+        },
+        {
+          "label": "Affine parameters",
+          "tex": "s = \\frac{\\beta - \\alpha}{q_{\\max} - q_{\\min}},\\quad z = \\Big\\lfloor q_{\\min} - \\frac{\\alpha}{s}\\Big\\rceil"
+        },
+        {
+          "label": "SQNR",
+          "tex": "\\text{SQNR} = 10\\log_{10}\\frac{\\sum x^2}{\\sum (x-\\hat x)^2}\\ \\text{dB} \\approx 6.02\\,b + c"
+        }
+      ],
+      "papers": [
+        {
+          "authors": "S. Han, H. Mao, W. J. Dally",
+          "year": 2016,
+          "title": "Deep Compression: Compressing Deep Neural Networks with Pruning, Trained Quantization and Huffman Coding",
+          "venue": "ICLR 2016",
+          "url": "https://arxiv.org/abs/1510.00149"
+        },
+        {
+          "authors": "B. Jacob, S. Kligys, B. Chen, et al.",
+          "year": 2018,
+          "title": "Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference",
+          "venue": "CVPR 2018",
+          "url": "https://arxiv.org/abs/1712.05877"
+        },
+        {
+          "authors": "R. Krishnamoorthi",
+          "year": 2018,
+          "title": "Quantizing deep convolutional networks for efficient inference: A whitepaper",
+          "venue": "arXiv",
+          "url": "https://arxiv.org/abs/1806.08342"
+        },
+        {
+          "authors": "M. Nagel, M. Fournarakis, R. A. Amjad, et al.",
+          "year": 2021,
+          "title": "A White Paper on Neural Network Quantization",
+          "venue": "arXiv",
+          "url": "https://arxiv.org/abs/2106.08295"
+        }
+      ],
+      "challenge": {
+        "type": "metric",
+        "prompt": "Quantise the layer to 4 bits and choose a calibration range that reaches an SQNR of 14.5 dB or more (min/max calibration only manages about 11.6 dB).",
+        "metric": "quant-sqnr-4bit",
+        "comparator": "gte",
+        "threshold": 14.5,
+        "unit": "dB"
+      },
+      "visualizers": [
+        "QuantizationViz"
+      ],
+      "route": "/learn/quantization"
+    }
+  ]
+}
