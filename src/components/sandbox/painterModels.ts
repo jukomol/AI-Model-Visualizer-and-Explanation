@@ -1,4 +1,5 @@
 import type { ClassicKind } from '@/lib/classicClassifiers'
+import type { DatasetPreset } from '@/lib/datasets2d'
 import type { ClassifierKind } from '@/lib/tf/classifier'
 
 export type PainterModel = ClassifierKind | ClassicKind
@@ -90,4 +91,39 @@ export const CLASSIC_MODELS = (Object.keys(PAINTER_MODELS) as PainterModel[]).fi
 
 export function isClassic(kind: PainterModel): kind is ClassicKind {
   return PAINTER_MODELS[kind].family === 'classic'
+}
+
+/**
+ * Model/preset pairs where no setting of the model's controls can fit the data,
+ * with the structural reason. Verified in painterModels.test.ts: every listed pair
+ * stays below 75 % accuracy across a sweep of its settings, and every pair not
+ * listed reaches at least 85 %. Models that merely need tuning (e.g. AdaBoost
+ * stumps on XOR, fixed by deeper weak learners) are not listed.
+ */
+export const UNSUPPORTED: Partial<Record<DatasetPreset, Partial<Record<PainterModel, string>>>> = {
+  xor: {
+    logistic: 'its boundary is a single straight line',
+    lda: 'its boundaries are straight lines',
+    'naive-bayes': 'x and y are only informative together, which breaks the independence assumption',
+  },
+  circles: {
+    logistic: 'its boundary is a single straight line',
+    lda: 'both rings share a centre, and LDA only separates class means',
+  },
+  spiral: {
+    logistic: 'its boundary is a single straight line',
+    lda: 'its boundaries are straight lines',
+    qda: 'one Gaussian per class cannot follow a spiral arm',
+    'naive-bayes': 'one axis-aligned Gaussian per class cannot follow a spiral arm',
+  },
+}
+
+/** Why `model` cannot fit `preset`, or null when it can. */
+export function unsupportedReason(model: PainterModel, preset: DatasetPreset): string | null {
+  return UNSUPPORTED[preset]?.[model] ?? null
+}
+
+/** A model to fall back to when the current one cannot fit the new preset. */
+export function fallbackModel(model: PainterModel): PainterModel {
+  return isClassic(model) ? 'knn' : 'mlp'
 }

@@ -19,7 +19,7 @@ import { useAnimationLoop } from '@/hooks/useAnimationLoop'
 import { useChallengeReporter } from '@/hooks/useChallenge'
 import { loadTf } from '@/hooks/useExplodedModel'
 import { useThemeMode } from '@/hooks/useThemeMode'
-import { CLASSIC_MODELS, NEURAL_MODELS, PAINTER_MODELS, isClassic, type PainterModel } from './painterModels'
+import { CLASSIC_MODELS, NEURAL_MODELS, PAINTER_MODELS, fallbackModel, isClassic, unsupportedReason, type PainterModel } from './painterModels'
 
 const DOMAIN = { xMin: -1, xMax: 1, yMin: -1, yMax: 1 }
 const GRID = 56
@@ -51,7 +51,11 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
   const [points, setPoints] = useState<LabeledPoint[]>(() => generatePreset(initialPreset, createRng(1)))
   const [edited, setEdited] = useState(false)
   const [brushClass, setBrushClass] = useState(0)
-  const [kind, setKind] = useState<PainterModel>(initialModel)
+  const [kind, setKind] = useState<PainterModel>(() => (allowModelSwitch && unsupportedReason(initialModel, initialPreset) ? fallbackModel(initialModel) : initialModel))
+  // Models that cannot fit a preset are disabled while the data comes from that
+  // preset; clearing the canvas to paint from scratch re-enables all of them.
+  const [fromPreset, setFromPreset] = useState(true)
+  const [switchNote, setSwitchNote] = useState<string | null>(null)
   const [layers, setLayers] = useState(2)
   const [units, setUnits] = useState(16)
   const [activation, setActivation] = useState<HiddenActivation>('tanh')
@@ -74,6 +78,11 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
   const metricKey = `${kind}-%s-${edited ? 'custom' : preset}`
   const classic = isClassic(kind)
   const info = PAINTER_MODELS[kind]
+  const blockedReason = (m: PainterModel, p: DatasetPreset = preset) => (allowModelSwitch && fromPreset ? unsupportedReason(m, p) : null)
+  const blocked = (Object.keys(PAINTER_MODELS) as PainterModel[]).flatMap((m) => {
+    const reason = blockedReason(m)
+    return reason ? [{ m, reason }] : []
+  })
   const setParam = <K extends keyof ClassicParams>(key: K, value: ClassicParams[K]) => setClassicParams((p) => ({ ...p, [key]: value }))
 
   useEffect(() => {
@@ -173,6 +182,12 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
     setRunning(false)
     setPreset(p)
     setEdited(false)
+    setFromPreset(true)
+    if (allowModelSwitch && unsupportedReason(kind, p)) {
+      const next = fallbackModel(kind)
+      setKind(next)
+      setSwitchNote(`${PAINTER_MODELS[kind].label} cannot fit ${PRESET_LABELS[p].toLowerCase()} (${unsupportedReason(kind, p)}), so the painter switched to ${PAINTER_MODELS[next].label.toLowerCase()}.`)
+    } else if (p !== preset) setSwitchNote(null)
     setPoints(generatePreset(p, createRng(sd), n))
   }
 
@@ -257,7 +272,7 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
               <Button size="sm" variant="outline" onClick={() => { const s = seed + 1; setSeed(s); regenerate(preset, noise, s) }}>
                 <Shuffle /> Resample
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setEdited(true); setPoints([]) }}>
+              <Button size="sm" variant="ghost" onClick={() => { setEdited(true); setFromPreset(false); setSwitchNote(null); setPoints([]) }}>
                 <Eraser /> Clear
               </Button>
             </div>
@@ -280,22 +295,44 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
           </ControlGroup>
           <ControlGroup title="Model">
             {allowModelSwitch && (
-              <NativeSelect aria-label="Classifier" value={kind} onChange={(e) => { setRunning(false); setKind(e.target.value as PainterModel) }}>
+              <NativeSelect aria-label="Classifier" value={kind} onChange={(e) => { setRunning(false); setSwitchNote(null); setKind(e.target.value as PainterModel) }}>
                 <optgroup label="Neural (trained with TensorFlow.js)">
                   {NEURAL_MODELS.map((k) => (
-                    <option key={k} value={k}>
+                    <option key={k} value={k} disabled={!!blockedReason(k)}>
                       {PAINTER_MODELS[k].label}
+                      {blockedReason(k) ? ' (can’t fit this data)' : ''}
                     </option>
                   ))}
                 </optgroup>
                 <optgroup label="Classic (fitted instantly)">
                   {CLASSIC_MODELS.map((k) => (
-                    <option key={k} value={k}>
+                    <option key={k} value={k} disabled={!!blockedReason(k)}>
                       {PAINTER_MODELS[k].label}
+                      {blockedReason(k) ? ' (can’t fit this data)' : ''}
                     </option>
                   ))}
                 </optgroup>
               </NativeSelect>
+            )}
+            {switchNote && (
+              <p role="status" className="rounded-md border border-border bg-muted/60 px-2.5 py-2 text-xs leading-relaxed">
+                {switchNote}
+              </p>
+            )}
+            {blocked.length > 0 && (
+              <details className="text-xs text-muted-foreground">
+                <summary className="cursor-pointer select-none">
+                  {blocked.length} model{blocked.length > 1 ? 's' : ''} disabled for this preset
+                </summary>
+                <ul className="mt-1.5 space-y-1 pl-1">
+                  {blocked.map(({ m, reason }) => (
+                    <li key={m}>
+                      <span className="font-medium text-foreground">{PAINTER_MODELS[m].label}</span>: {reason}.
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1.5">Clear the canvas and paint your own data to try any model.</p>
+              </details>
             )}
             {kind === 'knn' && (
               <>
