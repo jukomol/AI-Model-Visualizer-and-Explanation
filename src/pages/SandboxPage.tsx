@@ -22,7 +22,7 @@ export default function SandboxPage() {
         Free play without a lesson attached. Paint datasets, run TensorFlow.js snippets against live tensors, or open any visualizer from the curriculum.
       </p>
       <Tabs value={tool} onValueChange={(v) => set({ tool: v })} className="mt-6">
-        <TabsList>
+        <TabsList className="h-auto flex-wrap justify-start">
           <TabsTrigger value="painter">
             <Paintbrush /> Dataset painter
           </TabsTrigger>

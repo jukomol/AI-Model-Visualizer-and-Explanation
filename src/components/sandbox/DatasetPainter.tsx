@@ -4,28 +4,39 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { NativeSelect } from '@/components/ui/select'
 import { toast } from '@/components/ui/toaster'
-import { ControlGroup, LabeledSlider, PlayControls, Segmented, StatTile } from '@/components/viz/Controls'
+import { ControlGroup, LabeledSlider, PlayControls, Segmented, StatTile, ToggleRow } from '@/components/viz/Controls'
 import { LineChart } from '@/components/viz/LineChart'
 import { ClassLegend, ClassMarker, Plot2D, type PlotScales } from '@/components/viz/Plot2D'
 import { VizFrame } from '@/components/viz/VizFrame'
 import { hexToRgb } from '@/components/viz/paintField'
+import { DEFAULT_CLASSIC_PARAMS, accuracyOf, crossValidatedAccuracy, fitClassic, probabilityGrid, type ClassicParams, type SummaryItem } from '@/lib/classicClassifiers'
 import { CLASS_COLORS } from '@/lib/colormap'
 import { PRESET_LABELS, generatePreset, type DatasetPreset, type LabeledPoint } from '@/lib/datasets2d'
 import { createRng } from '@/lib/random'
-import { buildClassifier, createTrainer, type ClassifierKind, type HiddenActivation, type Trainer } from '@/lib/tf/classifier'
+import { buildClassifier, createTrainer, type HiddenActivation, type Trainer } from '@/lib/tf/classifier'
 import { fmt, pct } from '@/lib/utils'
 import { useAnimationLoop } from '@/hooks/useAnimationLoop'
 import { useChallengeReporter } from '@/hooks/useChallenge'
 import { loadTf } from '@/hooks/useExplodedModel'
 import { useThemeMode } from '@/hooks/useThemeMode'
+import { CLASSIC_MODELS, NEURAL_MODELS, PAINTER_MODELS, isClassic, type PainterModel } from './painterModels'
 
 const DOMAIN = { xMin: -1, xMax: 1, yMin: -1, yMax: 1 }
 const GRID = 56
 const STEPS_PER_TICK = 8
+const CV_FOLDS = 5
+
+interface ClassicFit {
+  summary: SummaryItem
+  trainAccuracy: number
+  /** Null while the cross-validation is still running. */
+  cvAccuracy: number | null
+  supportVectors: Set<number>
+}
 
 export interface DatasetPainterProps {
   /** Classifier trained on the painted data. */
-  model?: ClassifierKind
+  model?: PainterModel
   preset?: DatasetPreset
   allowModelSwitch?: boolean
   title?: string
@@ -40,7 +51,7 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
   const [points, setPoints] = useState<LabeledPoint[]>(() => generatePreset(initialPreset, createRng(1)))
   const [edited, setEdited] = useState(false)
   const [brushClass, setBrushClass] = useState(0)
-  const [kind, setKind] = useState<ClassifierKind>(initialModel)
+  const [kind, setKind] = useState<PainterModel>(initialModel)
   const [layers, setLayers] = useState(2)
   const [units, setUnits] = useState(16)
   const [activation, setActivation] = useState<HiddenActivation>('tanh')
@@ -50,6 +61,8 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
   const [stats, setStats] = useState<{ loss: number; accuracy: number } | null>(null)
   const [history, setHistory] = useState<{ step: number; loss: number }[]>([])
   const [grid, setGrid] = useState<{ probs: Float32Array; classes: number } | null>(null)
+  const [classicParams, setClassicParams] = useState<ClassicParams>(DEFAULT_CLASSIC_PARAMS)
+  const [classicFit, setClassicFit] = useState<ClassicFit | null>(null)
   const [tfReady, setTfReady] = useState(false)
   const tfRef = useRef<typeof TF | null>(null)
   const trainerRef = useRef<{ trainer: Trainer; model: TF.Sequential } | null>(null)
@@ -59,6 +72,9 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
 
   const classes = useMemo(() => Math.max(2, ...points.map((p) => p.label + 1)), [points])
   const metricKey = `${kind}-%s-${edited ? 'custom' : preset}`
+  const classic = isClassic(kind)
+  const info = PAINTER_MODELS[kind]
+  const setParam = <K extends keyof ClassicParams>(key: K, value: ClassicParams[K]) => setClassicParams((p) => ({ ...p, [key]: value }))
 
   useEffect(() => {
     let alive = true
@@ -85,14 +101,49 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
     setEpoch(0)
     setStats(null)
     setHistory([])
-    setGrid(null)
+    // Classic models refit straight away; keeping their old regions avoids a flash.
+    if (!isClassic(kind)) setGrid(null)
   }, [points, kind, layers, units, activation, lr, disposeTrainer])
+
+  // Classic models are fitted in closed form (or by a fast solver) on every edit,
+  // debounced so that painting strokes and slider drags stay responsive.
+  useEffect(() => {
+    if (!isClassic(kind)) {
+      setClassicFit(null)
+      return
+    }
+    let cancelled = false
+    let cvTimer: ReturnType<typeof setTimeout> | undefined
+    const fitTimer = setTimeout(() => {
+      if (points.length < 2) {
+        setGrid(null)
+        setClassicFit(null)
+        return
+      }
+      const xs = points.map((p) => [p.x, p.y] as [number, number])
+      const ys = points.map((p) => p.label)
+      const model = fitClassic(kind, xs, ys, classes, classicParams, seed)
+      setGrid({ probs: probabilityGrid(model, GRID), classes })
+      setClassicFit({ summary: model.summary, trainAccuracy: accuracyOf(model, xs, ys), cvAccuracy: null, supportVectors: new Set(model.supportVectors) })
+      // Cross-validation refits the model k times; run it after the new regions paint.
+      cvTimer = setTimeout(() => {
+        if (cancelled) return
+        const cv = points.length >= 2 * CV_FOLDS ? crossValidatedAccuracy(kind, xs, ys, classes, classicParams, CV_FOLDS, seed) : NaN
+        setClassicFit((f) => f && { ...f, cvAccuracy: cv })
+      }, 30)
+    }, 60)
+    return () => {
+      cancelled = true
+      clearTimeout(fitTimer)
+      clearTimeout(cvTimer)
+    }
+  }, [kind, points, classes, classicParams, seed])
 
   useEffect(() => disposeTrainer, [disposeTrainer])
 
   const ensureTrainer = useCallback(() => {
     const tf = tfRef.current
-    if (!tf || points.length < 2) return null
+    if (!tf || points.length < 2 || isClassic(kind)) return null
     if (!trainerRef.current) {
       const model = buildClassifier(tf, { kind, hidden: Array(layers).fill(units), activation, classes, seed })
       const trainer = createTrainer(tf, model, points.map((p) => [p.x, p.y] as [number, number]), points.map((p) => p.label), classes, lr)
@@ -184,9 +235,11 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
       title={title}
       description={
         <>
-          Click or drag to paint points of the selected class; Shift- or right-drag erases. Then train a{' '}
-          {kind === 'logistic' ? 'logistic-regression' : 'multilayer-perceptron'} classifier with TensorFlow.js and watch the decision regions
-          form. Shading strength shows the model’s confidence.
+          Click or drag to paint points of the selected class; Shift- or right-drag erases. Then pick a classifier:{' '}
+          {classic
+            ? 'classic models refit instantly on every edit, so you can watch the decision regions react as you paint.'
+            : 'neural models train step by step with TensorFlow.js, so you can watch the decision regions form.'}{' '}
+          Shading strength shows the model’s confidence.
         </>
       }
       controls={
@@ -227,14 +280,72 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
           </ControlGroup>
           <ControlGroup title="Model">
             {allowModelSwitch && (
-              <Segmented
-                value={kind}
-                onChange={(v) => { setRunning(false); setKind(v) }}
-                options={[
-                  { value: 'logistic', label: 'Logistic' },
-                  { value: 'mlp', label: 'MLP' },
-                ]}
-              />
+              <NativeSelect aria-label="Classifier" value={kind} onChange={(e) => { setRunning(false); setKind(e.target.value as PainterModel) }}>
+                <optgroup label="Neural (trained with TensorFlow.js)">
+                  {NEURAL_MODELS.map((k) => (
+                    <option key={k} value={k}>
+                      {PAINTER_MODELS[k].label}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Classic (fitted instantly)">
+                  {CLASSIC_MODELS.map((k) => (
+                    <option key={k} value={k}>
+                      {PAINTER_MODELS[k].label}
+                    </option>
+                  ))}
+                </optgroup>
+              </NativeSelect>
+            )}
+            {kind === 'knn' && (
+              <>
+                <LabeledSlider label="Neighbours k" value={classicParams.k} min={1} max={30} step={1} onChange={(v) => setParam('k', v)} hint="k = 1 memorises every point; larger k smooths the boundary." />
+                <ToggleRow label="Distance-weighted votes" checked={classicParams.distanceWeighted} onChange={(v) => setParam('distanceWeighted', v)} />
+              </>
+            )}
+            {(kind === 'lda' || kind === 'qda') && (
+              <LabeledSlider label="Covariance ridge λ" value={classicParams.reg} min={0.0001} max={1} step={0.0001} log onChange={(v) => setParam('reg', v)} format={(v) => v.toPrecision(2)} hint="Adds λI to each covariance; large λ pulls the Gaussians towards circles." />
+            )}
+            {kind === 'svm' && (
+              <>
+                <Segmented
+                  label="Kernel"
+                  value={classicParams.kernel}
+                  onChange={(v) => setParam('kernel', v)}
+                  options={[
+                    { value: 'rbf', label: 'RBF' },
+                    { value: 'poly', label: 'Polynomial' },
+                    { value: 'linear', label: 'Linear' },
+                  ]}
+                />
+                <LabeledSlider label="C (penalty on margin violations)" value={classicParams.C} min={0.01} max={100} step={0.01} log onChange={(v) => setParam('C', v)} format={(v) => v.toPrecision(2)} />
+                {classicParams.kernel !== 'linear' && (
+                  <LabeledSlider label="γ (kernel scale)" value={classicParams.gamma} min={0.1} max={100} step={0.1} log onChange={(v) => setParam('gamma', v)} format={(v) => v.toPrecision(2)} />
+                )}
+                {classicParams.kernel === 'poly' && <LabeledSlider label="Degree" value={classicParams.degree} min={2} max={6} step={1} onChange={(v) => setParam('degree', v)} />}
+              </>
+            )}
+            {(kind === 'tree' || kind === 'forest') && (
+              <>
+                {kind === 'forest' && <LabeledSlider label="Trees" value={classicParams.trees} min={1} max={100} step={1} onChange={(v) => setParam('trees', v)} />}
+                <LabeledSlider label="Max depth" value={classicParams.maxDepth} min={1} max={15} step={1} onChange={(v) => setParam('maxDepth', v)} />
+                <LabeledSlider label="Min samples to split" value={classicParams.minSamplesSplit} min={2} max={40} step={1} onChange={(v) => setParam('minSamplesSplit', v)} />
+                <Segmented
+                  label="Split criterion"
+                  value={classicParams.criterion}
+                  onChange={(v) => setParam('criterion', v)}
+                  options={[
+                    { value: 'gini', label: 'Gini' },
+                    { value: 'entropy', label: 'Entropy' },
+                  ]}
+                />
+              </>
+            )}
+            {kind === 'adaboost' && (
+              <>
+                <LabeledSlider label="Boosting rounds" value={classicParams.rounds} min={1} max={200} step={1} onChange={(v) => setParam('rounds', v)} />
+                <LabeledSlider label="Weak-learner depth" value={classicParams.weakDepth} min={1} max={3} step={1} onChange={(v) => setParam('weakDepth', v)} hint="Depth 1 = decision stumps." />
+              </>
             )}
             {kind === 'mlp' && (
               <>
@@ -252,24 +363,47 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
                 />
               </>
             )}
-            <LabeledSlider label="Learning rate (Adam)" value={lr} min={0.001} max={0.3} step={0.001} log onChange={setLr} format={(v) => v.toPrecision(2)} />
-            <PlayControls
-              running={running}
-              onToggle={() => setRunning((r) => !r)}
-              onStep={() => trainTick()}
-              onReset={() => {
-                setRunning(false)
-                disposeTrainer()
-                stepCount.current = 0
-                setSeed((s) => s + 1)
-                setEpoch(0)
-                setStats(null)
-                setHistory([])
-                setGrid(null)
-              }}
-              playLabel="Train"
-              disabled={!tfReady || points.length < 2}
-            />
+            {classic ? (
+              (kind === 'forest' || kind === 'svm') && (
+                <Button size="sm" variant="outline" onClick={() => setSeed((s) => s + 1)}>
+                  <Shuffle /> {kind === 'forest' ? 'New bootstrap samples' : 'Re-run SMO with a new seed'}
+                </Button>
+              )
+            ) : (
+              <>
+                <LabeledSlider label="Learning rate (Adam)" value={lr} min={0.001} max={0.3} step={0.001} log onChange={setLr} format={(v) => v.toPrecision(2)} />
+                <PlayControls
+                  running={running}
+                  onToggle={() => setRunning((r) => !r)}
+                  onStep={() => trainTick()}
+                  onReset={() => {
+                    setRunning(false)
+                    disposeTrainer()
+                    stepCount.current = 0
+                    setSeed((s) => s + 1)
+                    setEpoch(0)
+                    setStats(null)
+                    setHistory([])
+                    setGrid(null)
+                  }}
+                  playLabel="Train"
+                  disabled={!tfReady || points.length < 2}
+                />
+              </>
+            )}
+          </ControlGroup>
+          <ControlGroup title={`About ${info.label.toLowerCase()}`}>
+            <div className="space-y-1.5 text-xs leading-relaxed text-muted-foreground">
+              <p>{info.how}</p>
+              <p>
+                <span className="font-medium text-foreground">Works well: </span>
+                {info.goodAt}
+              </p>
+              <p>
+                <span className="font-medium text-foreground">Struggles: </span>
+                {info.weakAt}
+              </p>
+            </div>
           </ControlGroup>
         </>
       }
@@ -314,6 +448,10 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
         >
           {(s) => (
             <g onContextMenu={(e) => e.preventDefault()}>
+              {classicFit &&
+                points.map((p, i) =>
+                  classicFit.supportVectors.has(i) ? <circle key={`sv${i}`} cx={s.sx(p.x)} cy={s.sy(p.y)} r={8} fill="none" stroke="var(--foreground)" strokeWidth={1.5} opacity={0.75} /> : null,
+                )}
               {points.map((p, i) => (
                 <ClassMarker key={i} x={s.sx(p.x)} y={s.sy(p.y)} cls={p.label} r={4} />
               ))}
@@ -326,12 +464,25 @@ export default function DatasetPainter({ model: initialModel = 'mlp', preset: in
             <Paintbrush className="size-3.5" aria-hidden /> painting class {brushClass}
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <StatTile label="Adam steps" value={epoch.toLocaleString()} />
-          <StatTile label="Training loss" value={stats ? fmt(stats.loss, 3) : '—'} />
-          <StatTile label="Training accuracy" value={stats ? pct(stats.accuracy) : '—'} />
-        </div>
-        {history.length > 1 && (
+        {classic ? (
+          <div className="grid grid-cols-3 gap-2">
+            <StatTile label={classicFit?.summary.label ?? 'Model size'} value={classicFit?.summary.value ?? '—'} />
+            <StatTile label="Training accuracy" value={classicFit ? pct(classicFit.trainAccuracy) : '—'} />
+            <StatTile
+              label={`${CV_FOLDS}-fold CV accuracy`}
+              value={classicFit?.cvAccuracy == null ? '…' : Number.isNaN(classicFit.cvAccuracy) ? '—' : pct(classicFit.cvAccuracy)}
+              sub={classicFit && Number.isNaN(classicFit.cvAccuracy ?? 0) ? `needs ≥ ${2 * CV_FOLDS} points` : 'held-out estimate'}
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            <StatTile label="Adam steps" value={epoch.toLocaleString()} />
+            <StatTile label="Training loss" value={stats ? fmt(stats.loss, 3) : '—'} />
+            <StatTile label="Training accuracy" value={stats ? pct(stats.accuracy) : '—'} />
+          </div>
+        )}
+        {kind === 'svm' && classicFit && <p className="text-xs text-muted-foreground">Ringed points are support vectors: move any other point and the boundary does not change.</p>}
+        {!classic && history.length > 1 && (
           <LineChart ariaLabel="Training loss over Adam steps" data={history} xKey="step" xLabel="step" series={[{ key: 'loss', label: 'Training loss' }]} height={150} logY />
         )}
       </div>
